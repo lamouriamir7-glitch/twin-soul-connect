@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import MessagesScreen from "@/components/MessagesScreen";
 import MatchesScreen from "@/components/MatchesScreen";
 import { toast } from "sonner";
+import { useGlobalMessageNotifications } from "@/hooks/useGlobalMessageNotifications";
 
 type Profile = { id: string; nickname: string; vector: number[]; priorities: any };
 
@@ -47,6 +48,8 @@ const Index = () => {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  useGlobalMessageNotifications(me?.id ?? null);
 
   const savePriorities = async (p: Record<string, number>) => {
     setPriorities(p);
