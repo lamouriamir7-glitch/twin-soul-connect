@@ -1,16 +1,95 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import MessagesScreen from "@/components/MessagesScreen";
+import MatchesScreen from "@/components/MatchesScreen";
+import { toast } from "sonner";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+type Profile = { id: string; nickname: string; vector: number[]; priorities: any };
+
+const Index = () => {
+  const navigate = useNavigate();
+  const [me, setMe] = useState<Profile | null>(null);
+  const [view, setView] = useState<"messages" | "matches">("messages");
+  const [loading, setLoading] = useState(true);
+  const [priorities, setPriorities] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth", { replace: true });
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, nickname, vector, priorities")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (!profile) {
+        navigate("/fingerprint", { replace: true });
+        return;
+      }
+      const p: Profile = {
+        id: profile.id,
+        nickname: profile.nickname,
+        vector: profile.vector as unknown as number[],
+        priorities: profile.priorities ?? {},
+      };
+      setMe(p);
+      setPriorities((profile.priorities as Record<string, number>) ?? {});
+      setLoading(false);
+    };
+    init();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) navigate("/auth", { replace: true });
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  const savePriorities = async (p: Record<string, number>) => {
+    setPriorities(p);
+    if (me) await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    toast.success("إلى لقاء آخر");
+    navigate("/auth", { replace: true });
+  };
+
+  if (loading || !me) {
+    return (
+      <main className="starfield min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground animate-shimmer font-display">
+          يستيقظ توأمك...
+        </p>
+      </main>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
+    <main className="starfield min-h-screen px-4 py-8 relative">
+      <div className="relative z-10 max-w-3xl mx-auto">
+        {view === "messages" ? (
+          <MessagesScreen
+            meId={me.id}
+            onOpenMatches={() => setView("matches")}
+            onRenewFingerprint={() => navigate("/fingerprint")}
+            onLogout={logout}
+          />
+        ) : (
+          <MatchesScreen
+            me={me}
+            priorities={priorities}
+            onPrioritiesChange={savePriorities}
+            onBack={() => setView("messages")}
+          />
+        )}
+      </div>
+    </main>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;

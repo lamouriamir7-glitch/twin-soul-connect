@@ -13,7 +13,17 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['Cormorant Garamond', 'Amiri', 'serif'],
+        body: ['Amiri', 'Cormorant Garamond', 'serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
       colors: {
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          glow: "hsl(var(--gold-glow))",
+          deep: "hsl(var(--gold-deep))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
