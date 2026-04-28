@@ -49,6 +49,8 @@ const Index = () => {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
+  useGlobalMessageNotifications(me?.id ?? null);
+
   const savePriorities = async (p: Record<string, number>) => {
     setPriorities(p);
     if (me) await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
