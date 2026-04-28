@@ -178,3 +178,14 @@
 .animate-shimmer { animation: shimmer 3s ease-in-out infinite; }
 .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
 .animate-pulse-gold { animation: pulse-gold 4s ease-in-out infinite; }
+
+@keyframes gold-title-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px hsl(var(--gold) / 0.45))
+            drop-shadow(0 0 20px hsl(var(--gold-glow) / 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px hsl(var(--gold) / 0.7))
+            drop-shadow(0 0 32px hsl(var(--gold-glow) / 0.45));
+  }
+}
