@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { WisdomBox } from "@/components/WisdomBox";
 import { GEMINI_PROMPT, processUserVector } from "@/lib/twin-engine";
 import { toast } from "sonner";
-import { Copy, Fingerprint, ArrowLeft } from "lucide-react";
+import { Copy, Fingerprint as FingerprintIcon, ArrowLeft } from "lucide-react";
 
 export default function Fingerprint() {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export default function Fingerprint() {
         </button>
 
         <div className="text-center mb-8">
-          <Fingerprint className="w-14 h-14 mx-auto text-primary animate-float-slow mb-3" />
+          <FingerprintIcon className="w-14 h-14 mx-auto text-primary animate-float-slow mb-3" />
           <h1 className="font-display text-3xl md:text-5xl text-gradient-primary mb-2">
             {hasExisting ? "تجديد البصمة" : "بصمتك النفسية"}
           </h1>
