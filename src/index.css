@@ -111,6 +111,19 @@
     background-clip: text;
     color: transparent;
   }
+  /* Glowing gold title — fixes Arabic descender clipping with safe leading & padding */
+  .title-gold-glow {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1.6;
+    padding: 0.15em 0.1em 0.25em;
+    display: inline-block;
+    filter: drop-shadow(0 0 12px hsl(var(--gold) / 0.55))
+            drop-shadow(0 0 24px hsl(var(--gold-glow) / 0.35));
+    animation: gold-title-pulse 4s ease-in-out infinite;
+  }
   .bg-cosmic {
     background: var(--gradient-cosmic);
   }
