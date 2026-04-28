@@ -62,7 +62,7 @@ export default function Auth() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-primary/40 mb-4 shadow-violet-glow animate-float-slow">
             <Brain className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="font-display text-4xl md:text-5xl text-gradient-primary mb-2">
+          <h1 className="font-display text-4xl md:text-5xl title-gold-glow mb-2">
             التوأم الرقمي
           </h1>
           <p className="text-muted-foreground text-sm tracking-wide">

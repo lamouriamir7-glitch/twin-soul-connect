@@ -84,7 +84,7 @@ export default function MessagesScreen({
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain className="w-7 h-7 text-primary" />
-          <h1 className="font-display text-2xl md:text-3xl text-gradient-primary">
+          <h1 className="font-display text-2xl md:text-3xl title-gold-glow">
             التوأم الرقمي
           </h1>
         </div>

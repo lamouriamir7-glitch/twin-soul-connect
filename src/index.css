@@ -111,6 +111,19 @@
     background-clip: text;
     color: transparent;
   }
+  /* Glowing gold title — fixes Arabic descender clipping with safe leading & padding */
+  .title-gold-glow {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1.6;
+    padding: 0.15em 0.1em 0.25em;
+    display: inline-block;
+    filter: drop-shadow(0 0 12px hsl(var(--gold) / 0.55))
+            drop-shadow(0 0 24px hsl(var(--gold-glow) / 0.35));
+    animation: gold-title-pulse 4s ease-in-out infinite;
+  }
   .bg-cosmic {
     background: var(--gradient-cosmic);
   }
@@ -165,3 +178,14 @@
 .animate-shimmer { animation: shimmer 3s ease-in-out infinite; }
 .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
 .animate-pulse-gold { animation: pulse-gold 4s ease-in-out infinite; }
+
+@keyframes gold-title-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px hsl(var(--gold) / 0.45))
+            drop-shadow(0 0 20px hsl(var(--gold-glow) / 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px hsl(var(--gold) / 0.7))
+            drop-shadow(0 0 32px hsl(var(--gold-glow) / 0.45));
+  }
+}
