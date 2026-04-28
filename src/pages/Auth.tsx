@@ -138,6 +138,29 @@ export default function Auth() {
             {loading ? "جارٍ الاتصال..." : mode === "signup" ? "ابدأ الرحلة" : "ادخل"}
           </Button>
 
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border/60" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-card/60 px-3 text-xs text-muted-foreground tracking-wider">أو</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={signInWithGoogle}
+            disabled={loading}
+            variant="outline"
+            className="w-full bg-background/40 hover:bg-background/70 border-border font-display tracking-wide"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.31 0-6-2.74-6-6.1s2.69-6.1 6-6.1c1.88 0 3.14.8 3.86 1.49l2.63-2.53C16.84 3.42 14.66 2.5 12 2.5 6.76 2.5 2.5 6.76 2.5 12s4.26 9.5 9.5 9.5c5.48 0 9.11-3.85 9.11-9.27 0-.62-.07-1.1-.16-1.53H12z"/>
+              <path fill="#34A853" d="M3.88 7.34l3.2 2.35C7.94 7.7 9.81 6.4 12 6.4c1.88 0 3.14.8 3.86 1.49l2.63-2.53C16.84 3.42 14.66 2.5 12 2.5 8.24 2.5 5.0 4.62 3.88 7.34z" opacity="0"/>
+            </svg>
+            <span>الدخول عبر جوجل</span>
+          </Button>
+
           <button
             type="button"
             onClick={() => setMode(mode === "signup" ? "login" : "signup")}
