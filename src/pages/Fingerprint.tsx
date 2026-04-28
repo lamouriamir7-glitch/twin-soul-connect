@@ -4,9 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { WisdomBox } from "@/components/WisdomBox";
-import { GEMINI_PROMPT, processUserVector } from "@/lib/twin-engine";
+import { AI_PROMPT, processUserVector } from "@/lib/twin-engine";
 import { toast } from "sonner";
-import { Copy, Fingerprint as FingerprintIcon, ArrowLeft } from "lucide-react";
+import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare } from "lucide-react";
 
 export default function Fingerprint() {
   const navigate = useNavigate();
@@ -80,28 +80,60 @@ export default function Fingerprint() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             {hasExisting
               ? "تطوّر حواراتك يستحق بصمة جديدة. ستحتفظ بكل رسائلك وروابطك."
-              : "اطلب من ذكائك الاصطناعي أن يحلّلك، ثم الصق الكود الناتج هنا."}
+              : "ثلاث خطوات تفصلك عن لقاء صدى روحك."}
           </p>
         </div>
 
+        {!hasExisting && (
+          <section className="rounded-2xl border border-border bg-card/40 backdrop-blur-xl p-6 shadow-cosmic mb-6">
+            <h2 className="font-display text-lg text-gradient-primary mb-4 text-center">
+              كيف تحصل على شيفرتك؟
+            </h2>
+            <ol className="space-y-4">
+              <Step
+                n="١"
+                icon={<Copy className="w-4 h-4" />}
+                title="انسخ النص أدناه"
+                desc="هذا هو الطلب الذي سيحلّل شخصيتك."
+              />
+              <Step
+                n="٢"
+                icon={<MessageSquare className="w-4 h-4" />}
+                title="افتح ذكاءك الاصطناعي المفضّل"
+                desc="ChatGPT، Gemini، Claude، DeepSeek، أو أيّ مساعد اعتدت الدردشة معه. كلما طالت محادثاتك السابقة معه كانت بصمتك أصدق."
+              />
+              <Step
+                n="٣"
+                icon={<ClipboardPaste className="w-4 h-4" />}
+                title="الصق النص واطلب التحليل"
+                desc="سيعطيك في الأخير شيفرة طويلة (نص Base64). انسخها كاملةً وارجع للصقها هنا."
+              />
+            </ol>
+          </section>
+        )}
+
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl text-foreground">١. انسخ الوصفة</h2>
-            <Button onClick={copyPrompt} variant="outline" size="sm" className="gap-2">
-              <Copy className="w-4 h-4" /> نسخ
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-xl text-foreground flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> نصّ الطلب
+            </h2>
+            <Button onClick={copyPrompt} variant="outline" size="sm" className="gap-2 border-primary/40">
+              <Copy className="w-4 h-4" /> نسخ النص
             </Button>
           </div>
           <div className="rounded-lg bg-muted/40 border border-border p-4 max-h-44 overflow-y-auto font-mono text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
-            {GEMINI_PROMPT}
+            {AI_PROMPT}
           </div>
         </section>
 
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4 mt-6">
-          <h2 className="font-display text-xl">٢. الصق كود البصمة</h2>
+          <h2 className="font-display text-xl flex items-center gap-2">
+            <ClipboardPaste className="w-4 h-4 text-primary" /> الصق شيفرتك هنا
+          </h2>
           <Textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="نص Base64 المُستخرج من Gemini..."
+            placeholder="الصق هنا الشيفرة الطويلة التي أعطاك إياها ذكاؤك الاصطناعي..."
             rows={5}
             className="font-mono text-xs bg-input/60 border-border"
           />
