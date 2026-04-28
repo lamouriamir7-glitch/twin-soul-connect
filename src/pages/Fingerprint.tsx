@@ -151,3 +151,33 @@ export default function Fingerprint() {
     </main>
   );
 }
+
+function Step({
+  n,
+  icon,
+  title,
+  desc,
+}: {
+  n: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <li className="flex gap-4 items-start">
+      <div className="relative shrink-0">
+        <div className="w-10 h-10 rounded-full border border-primary/40 bg-primary/5 flex items-center justify-center font-display text-primary text-lg">
+          {n}
+        </div>
+      </div>
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="flex items-center gap-2 font-display text-base text-foreground mb-0.5">
+          <span className="text-primary/80">{icon}</span>
+          {title}
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+      </div>
+    </li>
+  );
+}
+
