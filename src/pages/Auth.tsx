@@ -56,6 +56,26 @@ export default function Auth() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
+      });
+      if (result.error) {
+        toast.error(result.error.message ?? "تعذّر الدخول عبر جوجل");
+        setLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      toast.error(err?.message ?? "حدث خطأ");
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="starfield min-h-screen flex items-center justify-center px-4 py-10 relative">
       <div className="relative z-10 w-full max-w-md">
