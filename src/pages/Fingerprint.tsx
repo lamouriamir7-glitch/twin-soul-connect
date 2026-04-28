@@ -28,14 +28,14 @@ export default function Fingerprint() {
   }, [navigate]);
 
   const copyPrompt = async () => {
-    await navigator.clipboard.writeText(GEMINI_PROMPT);
-    toast.success("تم نسخ الوصفة. الصقها في Gemini");
+    await navigator.clipboard.writeText(AI_PROMPT);
+    toast.success("تم نسخ النص. الصقه عند ذكائك الاصطناعي");
   };
 
   const submit = async () => {
     const vector = processUserVector(code);
     if (!vector) {
-      toast.error("الكود غير صحيح. تأكد من نسخه كاملاً من Gemini");
+      toast.error("الشيفرة غير صحيحة. تأكد من نسخها كاملةً");
       return;
     }
     setLoading(true);
