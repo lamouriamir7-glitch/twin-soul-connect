@@ -8,25 +8,26 @@ import Auth from "./pages/Auth.tsx";
 import Fingerprint from "./pages/Fingerprint.tsx";
 import Chat from "./pages/Chat.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import CosmicAmbience from "./components/CosmicAmbience";
+import { AmbienceProvider } from "./contexts/AmbienceContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <CosmicAmbience />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/fingerprint" element={<Fingerprint />} />
-          <Route path="/chat/:id" element={<Chat />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AmbienceProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/fingerprint" element={<Fingerprint />} />
+            <Route path="/chat/:id" element={<Chat />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AmbienceProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
