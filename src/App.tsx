@@ -8,6 +8,7 @@ import Auth from "./pages/Auth.tsx";
 import Fingerprint from "./pages/Fingerprint.tsx";
 import Chat from "./pages/Chat.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import CosmicAmbience from "./components/CosmicAmbience";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <CosmicAmbience />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
