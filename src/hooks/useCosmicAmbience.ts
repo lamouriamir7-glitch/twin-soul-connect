@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * موسيقى تأملية كونية مولّدة عبر Web Audio API.
+ * موسيقى تأملية دافئة مولّدة عبر Web Audio API.
  * بدون أي حقوق ملكية — كل النغمات تُولَّد رياضياً في المتصفح.
- * نغمات Drone بطيئة + تذبذبات نجمية + تردد Pad أثيري.
+ * نغمات ناعمة دافئة، بدون حدة، بدون تشويش.
  */
 export const useCosmicAmbience = () => {
   const [playing, setPlaying] = useState(false);
@@ -24,60 +24,77 @@ export const useCosmicAmbience = () => {
     ctxRef.current = ctx;
     if (ctx.state === "suspended") await ctx.resume();
 
+    // ماستر هادئ جداً
     const master = ctx.createGain();
     master.gain.value = 0;
+
+    // فلتر منخفض على المخرج كله — يقتل أي حدة
+    const masterFilter = ctx.createBiquadFilter();
+    masterFilter.type = "lowpass";
+    masterFilter.frequency.value = 900; // قطع الترددات العالية الحادة
+    masterFilter.Q.value = 0.5;
+
+    masterFilter.connect(master);
     master.connect(ctx.destination);
 
-    // Reverb بسيط عبر convolver مع ضوضاء مولّدة
+    // Reverb طويل ناعم
     const convolver = ctx.createConvolver();
-    const irLength = ctx.sampleRate * 3;
+    const irLength = ctx.sampleRate * 4;
     const ir = ctx.createBuffer(2, irLength, ctx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const data = ir.getChannelData(ch);
       for (let i = 0; i < irLength; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLength, 2.5);
+        // ضوضاء ناعمة جداً مع انحلال أسي
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLength, 3.5) * 0.7;
       }
     }
     convolver.buffer = ir;
     const wet = ctx.createGain();
-    wet.gain.value = 0.55;
-    convolver.connect(wet).connect(master);
+    wet.gain.value = 0.6;
+    convolver.connect(wet).connect(masterFilter);
 
     const dry = ctx.createGain();
-    dry.gain.value = 0.45;
-    dry.connect(master);
+    dry.gain.value = 0.5;
+    dry.connect(masterFilter);
 
-    // Drone أساسي — تردد منخفض يوحي بعمق الكون
-    // مقام تأملي: D (ري) — D2, A2, F3, A3, C4, E4
-    const freqs = [73.42, 110.0, 174.61, 220.0, 261.63, 329.63];
+    // مقام دافئ — C major مفتوح، نغمات منخفضة فقط
+    // C2, G2, C3, E3, G3 — تجنّب النغمات العالية والتنافر
+    const voices = [
+      { freq: 65.41, gain: 0.06, type: "sine" as OscillatorType },   // C2
+      { freq: 98.0,  gain: 0.05, type: "sine" as OscillatorType },   // G2
+      { freq: 130.81, gain: 0.045, type: "sine" as OscillatorType }, // C3
+      { freq: 196.0,  gain: 0.035, type: "sine" as OscillatorType }, // G3
+      { freq: 261.63, gain: 0.025, type: "sine" as OscillatorType }, // C4
+    ];
+
     const oscs: OscillatorNode[] = [];
     const lfos: OscillatorNode[] = [];
 
-    freqs.forEach((f, i) => {
+    voices.forEach((v, i) => {
       const osc = ctx.createOscillator();
-      osc.type = i < 2 ? "sine" : i < 4 ? "triangle" : "sine";
-      osc.frequency.value = f;
-
-      // detune بسيط حي
-      osc.detune.value = (Math.random() - 0.5) * 8;
+      osc.type = v.type;
+      osc.frequency.value = v.freq;
+      // detune خفيف جداً — لا اهتزاز قوي
+      osc.detune.value = (Math.random() - 0.5) * 3;
 
       const g = ctx.createGain();
       g.gain.value = 0;
 
-      // فلتر منخفض لجعل الصوت أثيرياً
-      const filter = ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 1200 + i * 200;
-      filter.Q.value = 0.8;
+      // فلتر منفصل لكل صوت لتنعيم أكثر
+      const f = ctx.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.value = 600 + i * 80;
+      f.Q.value = 0.4;
 
-      // LFO على الـ gain — تنفس بطيء كأمواج كونية
+      // LFO بطيء جداً — تنفس لطيف بدلاً من اهتزاز
       const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.04 + i * 0.015; // بطيء جداً
+      lfo.frequency.value = 0.025 + i * 0.008; // أبطأ بكثير
       const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 0.045;
+      lfoGain.gain.value = v.gain * 0.3; // عمق أقل
       lfo.connect(lfoGain).connect(g.gain);
+      g.gain.value = v.gain;
 
-      osc.connect(filter).connect(g);
+      osc.connect(f).connect(g);
       g.connect(dry);
       g.connect(convolver);
 
@@ -85,43 +102,19 @@ export const useCosmicAmbience = () => {
       lfo.start();
       oscs.push(osc);
       lfos.push(lfo);
-
-      // قيمة أساس للـ gain (مع LFO يضيف إليها)
-      g.gain.value = 0.05 + (i < 2 ? 0.04 : 0);
     });
 
-    // ومضات نجمية عشوائية — نغمات عالية تظهر وتختفي
-    const sparkleInterval = setInterval(() => {
-      if (!nodesRef.current) return;
-      const now = ctx.currentTime;
-      const star = ctx.createOscillator();
-      star.type = "sine";
-      // نغمات من السلم: D5, F5, A5, C6, E6
-      const starFreqs = [587.33, 698.46, 880.0, 1046.5, 1318.51];
-      star.frequency.value =
-        starFreqs[Math.floor(Math.random() * starFreqs.length)];
-      const sg = ctx.createGain();
-      sg.gain.setValueAtTime(0, now);
-      sg.gain.linearRampToValueAtTime(0.025, now + 1.5);
-      sg.gain.linearRampToValueAtTime(0, now + 5);
-      star.connect(sg);
-      sg.connect(convolver);
-      star.start(now);
-      star.stop(now + 5.2);
-    }, 4500);
-
-    // Fade in بطيء
+    // Fade in بطيء جداً — 6 ثوان
     const now = ctx.currentTime;
     master.gain.setValueAtTime(0, now);
-    master.gain.linearRampToValueAtTime(0.35, now + 4);
+    master.gain.linearRampToValueAtTime(0.22, now + 6);
 
     nodesRef.current = {
       stop: () => {
-        clearInterval(sparkleInterval);
         const t = ctx.currentTime;
         master.gain.cancelScheduledValues(t);
         master.gain.setValueAtTime(master.gain.value, t);
-        master.gain.linearRampToValueAtTime(0, t + 1.2);
+        master.gain.linearRampToValueAtTime(0, t + 1.5);
         setTimeout(() => {
           oscs.forEach((o) => {
             try {
@@ -137,11 +130,12 @@ export const useCosmicAmbience = () => {
           });
           try {
             master.disconnect();
+            masterFilter.disconnect();
             convolver.disconnect();
             wet.disconnect();
             dry.disconnect();
           } catch {}
-        }, 1400);
+        }, 1700);
       },
     };
     setPlaying(true);
