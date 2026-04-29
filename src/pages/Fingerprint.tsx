@@ -172,7 +172,7 @@ export default function Fingerprint() {
           />
           <Button
             onClick={submit}
-            disabled={loading || !code.trim()}
+            disabled={loading || !code.trim() || (needsNickname && !nickname.trim())}
             className="w-full bg-gradient-to-l from-primary to-accent text-primary-foreground font-display tracking-wider shadow-violet-glow"
           >
             {loading ? "جارٍ التحليل..." : hasExisting ? "تجديد البصمة" : "تثبيت البصمة"}
