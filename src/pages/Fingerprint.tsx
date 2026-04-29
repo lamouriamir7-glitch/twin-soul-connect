@@ -46,6 +46,11 @@ export default function Fingerprint() {
   };
 
   const submit = async () => {
+    const trimmedNick = nickname.trim();
+    if (needsNickname && !trimmedNick) {
+      toast.error("اختر اسماً مستعاراً يميّزك في الفضاء");
+      return;
+    }
     const vector = processUserVector(code);
     if (!vector) {
       toast.error("الشيفرة غير صحيحة. تأكد من نسخها كاملةً");
@@ -55,15 +60,11 @@ export default function Fingerprint() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("الجلسة منتهية");
-      const nickname =
-        localStorage.getItem("pending_nickname") ||
-        user.user_metadata?.nickname ||
-        user.email?.split("@")[0] ||
-        "مجهول";
+      const finalNickname = trimmedNick || nickname || "مجهول";
 
       const { error } = await supabase
         .from("profiles")
-        .upsert({ id: user.id, nickname, vector }, { onConflict: "id" });
+        .upsert({ id: user.id, nickname: finalNickname, vector }, { onConflict: "id" });
       if (error) throw error;
       localStorage.removeItem("pending_nickname");
       toast.success("تم تسجيل بصمتك النفسية");
