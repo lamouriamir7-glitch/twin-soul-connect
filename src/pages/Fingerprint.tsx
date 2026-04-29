@@ -6,13 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { WisdomBox } from "@/components/WisdomBox";
 import { AI_PROMPT, processUserVector } from "@/lib/twin-engine";
 import { toast } from "sonner";
-import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare } from "lucide-react";
+import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare, UserCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Fingerprint() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [needsNickname, setNeedsNickname] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -20,10 +24,19 @@ export default function Fingerprint() {
       if (!user) return navigate("/auth", { replace: true });
       const { data } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, nickname")
         .eq("id", user.id)
         .maybeSingle();
       setHasExisting(!!data);
+      if (data?.nickname) {
+        setNickname(data.nickname);
+        setNeedsNickname(false);
+      } else {
+        // Always ask the user to choose their in-app nickname (don't reuse Google name)
+        const pending = localStorage.getItem("pending_nickname");
+        if (pending) setNickname(pending);
+        setNeedsNickname(true);
+      }
     })();
   }, [navigate]);
 
@@ -33,6 +46,11 @@ export default function Fingerprint() {
   };
 
   const submit = async () => {
+    const trimmedNick = nickname.trim();
+    if (needsNickname && !trimmedNick) {
+      toast.error("اختر اسماً مستعاراً يميّزك في الفضاء");
+      return;
+    }
     const vector = processUserVector(code);
     if (!vector) {
       toast.error("الشيفرة غير صحيحة. تأكد من نسخها كاملةً");
@@ -42,15 +60,11 @@ export default function Fingerprint() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("الجلسة منتهية");
-      const nickname =
-        localStorage.getItem("pending_nickname") ||
-        user.user_metadata?.nickname ||
-        user.email?.split("@")[0] ||
-        "مجهول";
+      const finalNickname = trimmedNick || nickname || "مجهول";
 
       const { error } = await supabase
         .from("profiles")
-        .upsert({ id: user.id, nickname, vector }, { onConflict: "id" });
+        .upsert({ id: user.id, nickname: finalNickname, vector }, { onConflict: "id" });
       if (error) throw error;
       localStorage.removeItem("pending_nickname");
       toast.success("تم تسجيل بصمتك النفسية");
@@ -112,6 +126,25 @@ export default function Fingerprint() {
           </section>
         )}
 
+        {needsNickname && (
+          <section className="rounded-2xl border border-gold/40 bg-card/60 backdrop-blur-xl p-6 shadow-gold-glow space-y-3 mb-6">
+            <h2 className="font-display text-xl flex items-center gap-2">
+              <UserCircle2 className="w-5 h-5 text-gold" /> اسمك في هذا الفضاء
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              اختر اسماً مستعاراً يميّزك. لن يرى الآخرون اسمك الحقيقي، فقط هذا الاسم.
+            </p>
+            <Label className="font-display sr-only">اسم مستعار</Label>
+            <Input
+              value={nickname}
+              maxLength={40}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="هويّتك في الفضاء..."
+              className="bg-input/60 border-border"
+            />
+          </section>
+        )}
+
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-xl text-foreground flex items-center gap-2">
@@ -139,7 +172,7 @@ export default function Fingerprint() {
           />
           <Button
             onClick={submit}
-            disabled={loading || !code.trim()}
+            disabled={loading || !code.trim() || (needsNickname && !nickname.trim())}
             className="w-full bg-gradient-to-l from-primary to-accent text-primary-foreground font-display tracking-wider shadow-violet-glow"
           >
             {loading ? "جارٍ التحليل..." : hasExisting ? "تجديد البصمة" : "تثبيت البصمة"}
