@@ -100,9 +100,15 @@ export default function MessagesScreen({
       <div className="grid grid-cols-2 gap-3">
         <Button
           onClick={onOpenMatches}
-          className="bg-gradient-to-l from-primary to-accent text-primary-foreground font-display shadow-violet-glow gap-2 h-12"
+          className="relative overflow-hidden font-display gap-2 h-12 text-[hsl(38_70%_15%)] border-0 animate-pulse-gold tracking-wider"
+          style={{
+            background: "var(--gradient-gold)",
+            boxShadow:
+              "0 0 24px hsl(var(--gold) / 0.55), 0 0 48px hsl(var(--gold-glow) / 0.35), inset 0 1px 0 hsl(45 100% 85% / 0.5)",
+          }}
         >
-          <Search className="w-4 h-4" /> توائمي
+          <Search className="w-4 h-4" />
+          <span className="font-bold">توائمي</span>
         </Button>
         <Button
           onClick={onRenewFingerprint}
