@@ -126,6 +126,25 @@ export default function Fingerprint() {
           </section>
         )}
 
+        {needsNickname && (
+          <section className="rounded-2xl border border-gold/40 bg-card/60 backdrop-blur-xl p-6 shadow-gold-glow space-y-3 mb-6">
+            <h2 className="font-display text-xl flex items-center gap-2">
+              <UserCircle2 className="w-5 h-5 text-gold" /> اسمك في هذا الفضاء
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              اختر اسماً مستعاراً يميّزك. لن يرى الآخرون اسمك الحقيقي، فقط هذا الاسم.
+            </p>
+            <Label className="font-display sr-only">اسم مستعار</Label>
+            <Input
+              value={nickname}
+              maxLength={40}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="هويّتك في الفضاء..."
+              className="bg-input/60 border-border"
+            />
+          </section>
+        )}
+
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-xl text-foreground flex items-center gap-2">
