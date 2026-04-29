@@ -68,6 +68,34 @@ export const AmbienceProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // إيقاف الموسيقى عند مغادرة التطبيق (تبديل التبويب / الخروج للشاشة الرئيسية)
+  // واستئنافها تلقائياً عند العودة إن كانت مفعّلة سابقاً
+  useEffect(() => {
+    const onVisibility = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      if (document.hidden) {
+        if (!a.paused) a.pause();
+      } else {
+        // استئنف فقط إذا كان المستخدم لم يوقفها يدوياً
+        if (localStorage.getItem(STORAGE_KEY) !== "false" && a.paused) {
+          a.play().catch(() => {});
+        }
+      }
+    };
+    const onPageHide = () => {
+      audioRef.current?.pause();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("blur", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("blur", onPageHide);
+    };
+  }, []);
+
   const toggle = () => {
     const a = audioRef.current;
     if (!a) return;
