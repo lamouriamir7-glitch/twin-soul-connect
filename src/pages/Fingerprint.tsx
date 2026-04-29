@@ -6,13 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { WisdomBox } from "@/components/WisdomBox";
 import { AI_PROMPT, processUserVector } from "@/lib/twin-engine";
 import { toast } from "sonner";
-import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare } from "lucide-react";
+import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare, UserCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Fingerprint() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [needsNickname, setNeedsNickname] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -20,10 +24,19 @@ export default function Fingerprint() {
       if (!user) return navigate("/auth", { replace: true });
       const { data } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, nickname")
         .eq("id", user.id)
         .maybeSingle();
       setHasExisting(!!data);
+      if (data?.nickname) {
+        setNickname(data.nickname);
+        setNeedsNickname(false);
+      } else {
+        // Always ask the user to choose their in-app nickname (don't reuse Google name)
+        const pending = localStorage.getItem("pending_nickname");
+        if (pending) setNickname(pending);
+        setNeedsNickname(true);
+      }
     })();
   }, [navigate]);
 
