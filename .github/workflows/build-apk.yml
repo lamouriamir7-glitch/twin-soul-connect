@@ -3,8 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 jobs:
   build:
@@ -22,19 +20,18 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # تحديث نسخة جافا إلى 17 لحل مشاكل مكتبات التشفير bcprov
+      # حذف خاصية الـ cache مؤقتاً لتجنب خطأ "No file matched"
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'zulu'
-          cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Build Web Project
-        run: npm run build # أو الأمر الذي تستخدمه لبناء واجهة الويب
+        run: npm run build
 
       - name: Initialize Capacitor
         run: npx cap sync android
@@ -42,11 +39,8 @@ jobs:
       - name: Build APK with Gradle
         run: |
           cd android
-          # إعطاء صلاحيات التنفيذ لملف gradlew
           chmod +x gradlew
-          # تنظيف الملفات المؤقتة والتالفة
           ./gradlew clean
-          # بناء ملف APK (Debug) مع تعطيل الذاكرة المؤقتة للتأكد من نظافة البناء
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
