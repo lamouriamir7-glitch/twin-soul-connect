@@ -15,7 +15,28 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
+  const [guestNickname, setGuestNickname] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const signInAsGuest = async () => {
+    const trimmed = guestNickname.trim();
+    if (!trimmed) {
+      toast.error("اختر اسماً مستعاراً أولاً");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      localStorage.setItem("pending_nickname", trimmed);
+      toast.success("مرحباً بك يا " + trimmed);
+      navigate("/fingerprint", { replace: true });
+    } catch (err: any) {
+      toast.error(err.message ?? "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
