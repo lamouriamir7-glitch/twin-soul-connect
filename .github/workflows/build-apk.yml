@@ -20,7 +20,6 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
-          # تثبيت كاباسيتور بشكل صريح لضمان وجود التنفيذي
           npm install @capacitor/cli @capacitor/core @capacitor/android
 
       - name: Set up JDK 17
@@ -35,9 +34,11 @@ jobs:
       - name: Build Web Project
         run: npm run build --if-present
 
-      - name: Initialize Capacitor
+      - name: Initialize Capacitor & Add Android
         run: |
-          # استخدام npx مع التثبيت المؤقت لضمان التشغيل
+          # الخطوة السحرية: التأكد من وجود منصة أندرويد وإضافتها إن لم توجد
+          npx cap source add android || true
+          npx cap add android || true
           npx cap sync android
 
       - name: Build APK with Gradle
