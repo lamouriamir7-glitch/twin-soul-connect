@@ -46,11 +46,12 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
+          # الحل الجذري: تنظيف المكتبات المتضاربة وإجبار التوحيد
           ./gradlew clean
-          # إضافة بارامترات قوية لإجبار Gradle على حل تضارب المكتبات
           ./gradlew assembleDebug --no-daemon \
             -Pandroid.useAndroidX=true \
             -Pandroid.enableJetifier=true \
+            -Pkotlin.stdlib.default.dependency=false \
             -Dorg.gradle.java.home=$JAVA_HOME_21_X64
 
       - name: Upload APK
