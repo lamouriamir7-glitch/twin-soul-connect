@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WisdomBox } from "@/components/WisdomBox";
 import { toast } from "sonner";
-import { Brain } from "lucide-react";
+import { Brain, UserCircle2 } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
