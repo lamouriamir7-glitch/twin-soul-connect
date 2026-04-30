@@ -34,19 +34,29 @@ jobs:
       - name: Build Web Project
         run: npm run build --if-present
 
-      - name: Initialize Capacitor & Add Android
+      - name: Force Initialize Capacitor
         run: |
-          # الخطوة السحرية: التأكد من وجود منصة أندرويد وإضافتها إن لم توجد
-          npx cap source add android || true
+          # إنشاء ملف إعدادات افتراضي إذا كان مفقوداً لتجنب خطأ appId
+          if [ ! -f "capacitor.config.json" ]; then
+            echo '{"appId": "com.amir.digitaltwin", "appName": "DigitalTwin", "webDir": "dist"}' > capacitor.config.json
+          fi
+          
+          # إضافة المنصة والمزامنة مع تجاهل الأخطاء إذا كانت موجودة مسبقاً
           npx cap add android || true
           npx cap sync android
 
       - name: Build APK with Gradle
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleDebug --no-daemon
+          # التأكد من وجود مجلد أندرويد قبل البدء
+          if [ -d "android" ]; then
+            cd android
+            chmod +x gradlew
+            ./gradlew clean
+            ./gradlew assembleDebug --no-daemon
+          else
+            echo "Error: Android folder not found!"
+            exit 1
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
