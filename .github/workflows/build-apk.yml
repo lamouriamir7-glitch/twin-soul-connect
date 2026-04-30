@@ -1,0 +1,40 @@
+name: Build Android APK
+on: [push] # سيعمل الروبوت تلقائياً عند كل تحديث للكود
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Project
+        run: npm run build
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Build with Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Digital Twin" "com.amir.digitaltwin" --web-dir dist
+          npx cap add android
+          npx cap copy android
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: Digital-Twin-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
