@@ -57,7 +57,7 @@ export const AmbienceProvider = ({ children }: { children: ReactNode }) => {
   // تهيئة عنصر الصوت مرة واحدة
   useEffect(() => {
     const audio = new Audio();
-    audio.loop = true;
+    audio.loop = false;
     audio.volume = 0.28;
     audio.preload = "auto";
     audioRef.current = audio;
