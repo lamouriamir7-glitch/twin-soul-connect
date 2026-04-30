@@ -68,7 +68,7 @@ export const AmbienceProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // تحميل المقطوعة عند تغيير الفهرس
+  // تحميل المقطوعة عند تغيير الفهرس + الانتقال التلقائي عند الانتهاء
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -78,9 +78,13 @@ export const AmbienceProvider = ({ children }: { children: ReactNode }) => {
     if (wasPlaying) {
       a.play().catch(() => {});
     }
-    a.onerror = () => {
-      // الانتقال للمقطوعة التالية تلقائياً عند فشل التحميل
-      setTrackIndex((i) => (i + 1) % TRACKS.length);
+    const onEnded = () => setTrackIndex((i) => (i + 1) % TRACKS.length);
+    const onError = () => setTrackIndex((i) => (i + 1) % TRACKS.length);
+    a.addEventListener("ended", onEnded);
+    a.addEventListener("error", onError);
+    return () => {
+      a.removeEventListener("ended", onEnded);
+      a.removeEventListener("error", onError);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackIndex]);
