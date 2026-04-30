@@ -112,6 +112,40 @@ export default function Auth() {
           </p>
         </div>
 
+        {/* Guest login - primary option */}
+        <div className="rounded-2xl border border-gold/40 bg-card/60 backdrop-blur-xl p-6 shadow-gold-glow space-y-4 mb-4">
+          <h2 className="font-display text-lg flex items-center gap-2 justify-center">
+            <UserCircle2 className="w-5 h-5 text-gold" /> دخول سريع كضيف
+          </h2>
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            اختر اسماً مستعاراً وابدأ فوراً — بدون حساب أو كلمة سر
+          </p>
+          <Input
+            maxLength={40}
+            value={guestNickname}
+            onChange={(e) => setGuestNickname(e.target.value)}
+            placeholder="هويّتك في الفضاء..."
+            className="bg-input/60 border-border"
+          />
+          <Button
+            type="button"
+            onClick={signInAsGuest}
+            disabled={loading || !guestNickname.trim()}
+            className="w-full bg-gradient-gold hover:opacity-90 text-background font-display tracking-wider shadow-gold-glow"
+          >
+            {loading ? "جارٍ الدخول..." : "ابدأ الرحلة ✦"}
+          </Button>
+        </div>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border/40" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-background px-3 text-xs text-muted-foreground tracking-wider">أو سجّل بحساب</span>
+          </div>
+        </div>
+
         <form
           onSubmit={submit}
           className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4"
@@ -156,7 +190,7 @@ export default function Auth() {
             disabled={loading}
             className="w-full bg-gradient-to-l from-primary to-accent hover:opacity-90 text-primary-foreground font-display tracking-wider shadow-violet-glow"
           >
-            {loading ? "جارٍ الاتصال..." : mode === "signup" ? "ابدأ الرحلة" : "ادخل"}
+            {loading ? "جارٍ الاتصال..." : mode === "signup" ? "إنشاء حساب" : "تسجيل الدخول"}
           </Button>
 
           <div className="relative my-2">
