@@ -131,7 +131,8 @@ export default function Auth() {
             type="button"
             onClick={signInAsGuest}
             disabled={loading || !guestNickname.trim()}
-            className="w-full bg-gradient-gold hover:opacity-90 text-background font-display tracking-wider shadow-gold-glow"
+            className="w-full hover:opacity-90 text-background font-display tracking-wider shadow-gold-glow"
+            style={{ background: "var(--gradient-gold)" }}
           >
             {loading ? "جارٍ الدخول..." : "ابدأ الرحلة ✦"}
           </Button>
