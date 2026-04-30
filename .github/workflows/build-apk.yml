@@ -11,7 +11,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Install Dependencies
         run: npm install
@@ -23,15 +23,22 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '17' # هذا هو التغيير الجوهري للحل
 
-      - name: Build with Capacitor
+      - name: Initialize Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Digital Twin" "com.amir.digitaltwin" --web-dir dist
-          npx cap add android
-          npx cap copy android
-          cd android && ./gradlew assembleDebug
+          if [ ! -f "capacitor.config.ts" ] && [ ! -f "capacitor.config.json" ]; then
+            npx cap init "Digital Twin" "com.amir.digitaltwin" --web-dir dist
+          fi
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug -Dorg.gradle.java.home=$JAVA_HOME_17_X64
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
