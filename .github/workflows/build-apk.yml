@@ -42,15 +42,22 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Fix Duplicate Classes & Build
+      - name: Total Conflict Resolution (The Hammer)
         run: |
           cd android
           
-          # إنشاء ملف خصائص يفرض توحيد المكتبات ويمنع التكرار
+          # 1. إجبار النظام على استخدام نسخة واحدة في ملف الخصائص
           echo "android.useAndroidX=true" > gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
           echo "kotlin.stdlib.default.dependency=false" >> gradle.properties
-          
+
+          # 2. حقن "استراتيجية الحل" في ملف build.gradle الرئيسي
+          # هذا الأمر يجبر Gradle على اختيار نسخة 1.9.10 لأي مكتبة Kotlin متصارعة
+          sed -i '/allprojects {/a \    configurations.all {\n        resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"\n        resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"\n        resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10"\n    }' build.gradle
+
+          # 3. حذف ملفات الموديول المتكررة من الحزمة النهائية
+          sed -i '/android {/a \    packagingOptions {\n        resources {\n            pickFirst "META-INF/*.kotlin_module"\n            exclude "META-INF/kotlin-stdlib-jdk7.kotlin_module"\n            exclude "META-INF/kotlin-stdlib-jdk8.kotlin_module"\n        }\n    }' app/build.gradle
+
           chmod +x gradlew
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon -Dorg.gradle.java.home=$JAVA_HOME_21_X64
