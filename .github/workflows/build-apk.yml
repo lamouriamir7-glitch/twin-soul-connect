@@ -1,17 +1,17 @@
 name: Build Android APK
-on: [push] # سيعمل الروبوت تلقائياً عند كل تحديث للكود
+on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Dependencies
         run: npm install
@@ -20,10 +20,10 @@ jobs:
         run: npm run build
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
 
       - name: Build with Capacitor
         run: |
@@ -34,7 +34,7 @@ jobs:
           cd android && ./gradlew assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Digital-Twin-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
