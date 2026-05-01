@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MessagesScreen from "@/components/MessagesScreen";
 import MatchesScreen from "@/components/MatchesScreen";
+import AnalysisSuccess from "@/components/AnalysisSuccess";
 import { toast } from "sonner";
 import { useGlobalMessageNotifications } from "@/hooks/useGlobalMessageNotifications";
 
@@ -10,8 +11,12 @@ type Profile = { id: string; nickname: string; vector: number[]; priorities: any
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const justAnalyzed = (location.state as { justAnalyzed?: boolean } | null)?.justAnalyzed === true;
   const [me, setMe] = useState<Profile | null>(null);
-  const [view, setView] = useState<"messages" | "matches">("messages");
+  const [view, setView] = useState<"messages" | "matches" | "success">(
+    justAnalyzed ? "success" : "messages"
+  );
   const [loading, setLoading] = useState(true);
   const [priorities, setPriorities] = useState<Record<string, number>>({});
 
@@ -75,7 +80,14 @@ const Index = () => {
   return (
     <main className="starfield min-h-screen px-4 py-8 relative">
       <div className="relative z-10 max-w-3xl mx-auto">
-        {view === "messages" ? (
+        {view === "success" ? (
+          <AnalysisSuccess
+            nickname={me.nickname}
+            onOpenMatches={() => setView("matches")}
+            onOpenMessages={() => setView("messages")}
+            onLogout={logout}
+          />
+        ) : view === "messages" ? (
           <MessagesScreen
             meId={me.id}
             onOpenMatches={() => setView("matches")}
