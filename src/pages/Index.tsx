@@ -80,7 +80,14 @@ const Index = () => {
   return (
     <main className="starfield min-h-screen px-4 py-8 relative">
       <div className="relative z-10 max-w-3xl mx-auto">
-        {view === "messages" ? (
+        {view === "success" ? (
+          <AnalysisSuccess
+            nickname={me.nickname}
+            onOpenMatches={() => setView("matches")}
+            onOpenMessages={() => setView("messages")}
+            onLogout={logout}
+          />
+        ) : view === "messages" ? (
           <MessagesScreen
             meId={me.id}
             onOpenMatches={() => setView("matches")}
