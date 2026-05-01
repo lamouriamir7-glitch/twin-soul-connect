@@ -68,7 +68,7 @@ export default function Fingerprint() {
       if (error) throw error;
       localStorage.removeItem("pending_nickname");
       toast.success("تم تسجيل بصمتك النفسية");
-      navigate("/", { replace: true });
+      navigate("/", { replace: true, state: { justAnalyzed: true } });
     } catch (e: any) {
       toast.error(e.message ?? "خطأ");
     } finally {
