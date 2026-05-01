@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MessagesScreen from "@/components/MessagesScreen";
 import MatchesScreen from "@/components/MatchesScreen";
+import AnalysisSuccess from "@/components/AnalysisSuccess";
 import { toast } from "sonner";
 import { useGlobalMessageNotifications } from "@/hooks/useGlobalMessageNotifications";
 
