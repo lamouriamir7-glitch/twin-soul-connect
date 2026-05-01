@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WisdomBox } from "@/components/WisdomBox";
 import { MessageCircle, Search, RefreshCw, LogOut, Brain } from "lucide-react";
-import AmbienceToggle from "@/components/AmbienceToggle";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -89,8 +88,7 @@ export default function MessagesScreen({
             التوأم الرقمي
           </h1>
         </div>
-        <div className="flex items-center gap-5">
-          <AmbienceToggle />
+        <div className="flex items-center gap-3">
           <button
             onClick={onLogout}
             className="text-muted-foreground hover:text-destructive transition"
