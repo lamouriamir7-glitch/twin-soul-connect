@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Sparkles, Search, CheckCircle2, MessageCircle } from "lucide-react";
-import AmbienceToggle from "@/components/AmbienceToggle";
-import { LogOut, Brain } from "lucide-react";
+import { Sparkles, Search, CheckCircle2, MessageCircle, LogOut, Brain } from "lucide-react";
 import { WisdomBox } from "@/components/WisdomBox";
 
 interface Props {
@@ -26,8 +24,7 @@ export default function AnalysisSuccess({
             التوأم الرقمي
           </h1>
         </div>
-        <div className="flex items-center gap-5">
-          <AmbienceToggle />
+        <div className="flex items-center gap-3">
           <button
             onClick={onLogout}
             className="text-muted-foreground hover:text-destructive transition"
@@ -38,20 +35,30 @@ export default function AnalysisSuccess({
         </div>
       </header>
 
-      <section className="text-center pt-6 pb-2">
-        <div className="relative inline-flex items-center justify-center mb-5">
+      <section className="text-center pt-8 pb-4 space-y-5">
+        <div className="relative inline-flex items-center justify-center">
           <div className="absolute inset-0 rounded-full bg-gold/20 blur-2xl animate-pulse" />
           <CheckCircle2 className="w-20 h-20 text-gold relative animate-float-slow" />
         </div>
-        <h2 className="font-display text-3xl md:text-4xl text-gradient-primary mb-3 leading-tight">
+
+        <h2
+          className="font-display text-3xl md:text-4xl text-gradient-primary mx-auto max-w-xl px-2 py-1"
+          style={{ lineHeight: 1.6 }}
+        >
           لقد تم تحليل بصمتك بنجاح
         </h2>
-        <p className="text-muted-foreground max-w-md mx-auto leading-relaxed text-sm md:text-base">
-          أهلاً بك يا <span className="text-gold font-display">{nickname}</span>،
-          بصمتك النفسية محفوظة في الفضاء.
-          <br />
-          الخطوة التالية: اكتشف من يشاركك صدى الروح.
-        </p>
+
+        <div className="space-y-2 max-w-md mx-auto px-4">
+          <p className="text-foreground/90 text-base md:text-lg leading-loose">
+            أهلاً بك يا <span className="text-gold font-display font-bold">{nickname}</span>
+          </p>
+          <p className="text-muted-foreground text-sm md:text-base leading-loose">
+            بصمتك النفسية محفوظة في الفضاء.
+          </p>
+          <p className="text-muted-foreground text-sm md:text-base leading-loose">
+            الخطوة التالية: اكتشف من يشاركك صدى الروح.
+          </p>
+        </div>
       </section>
 
       <div className="flex flex-col items-center gap-4 pt-2">
