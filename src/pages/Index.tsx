@@ -11,8 +11,12 @@ type Profile = { id: string; nickname: string; vector: number[]; priorities: any
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const justAnalyzed = (location.state as { justAnalyzed?: boolean } | null)?.justAnalyzed === true;
   const [me, setMe] = useState<Profile | null>(null);
-  const [view, setView] = useState<"messages" | "matches">("messages");
+  const [view, setView] = useState<"messages" | "matches" | "success">(
+    justAnalyzed ? "success" : "messages"
+  );
   const [loading, setLoading] = useState(true);
   const [priorities, setPriorities] = useState<Record<string, number>>({});
 
