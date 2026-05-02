@@ -80,17 +80,19 @@ export default function Auth() {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: "select_account" },
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: { prompt: "select_account" },
+        },
       });
-      if (result.error) {
-        toast.error(result.error.message ?? "تعذّر الدخول عبر جوجل");
+      if (error) {
+        toast.error(error.message ?? "تعذّر الدخول عبر جوجل");
         setLoading(false);
         return;
       }
-      if (result.redirected) return;
-      navigate("/", { replace: true });
+      // Browser will redirect to Google
     } catch (err: any) {
       toast.error(err?.message ?? "حدث خطأ");
       setLoading(false);
