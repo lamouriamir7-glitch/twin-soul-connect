@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,19 +80,20 @@ export default function Auth() {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: "select_account" },
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: { prompt: "select_account" },
+        },
       });
-      if (result.error) {
-        console.error("[Auth] Google OAuth error:", result.error);
-        toast.error((result.error as any)?.message ?? "تعذّر الدخول عبر جوجل");
+      if (error) {
+        console.error("[Auth] Google OAuth error:", error);
+        toast.error(error.message ?? "تعذّر الدخول عبر جوجل");
         setLoading(false);
         return;
       }
-      if (result.redirected) return; // browser is redirecting to Google
-      // tokens received & session set
-      navigate("/", { replace: true });
+      // المتصفح سيُعاد توجيهه تلقائيًا إلى جوجل
     } catch (err: any) {
       console.error("[Auth] Unexpected Google OAuth error:", err);
       toast.error(err?.message ?? "حدث خطأ");
