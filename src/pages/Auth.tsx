@@ -80,7 +80,8 @@ export default function Auth() {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("[Auth] Google OAuth → project:", import.meta.env.VITE_SUPABASE_URL);
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/`,
@@ -88,12 +89,15 @@ export default function Auth() {
         },
       });
       if (error) {
+        console.error("[Auth] Google OAuth error:", error);
         toast.error(error.message ?? "تعذّر الدخول عبر جوجل");
         setLoading(false);
         return;
       }
+      console.log("[Auth] OAuth redirect URL:", data?.url);
       // Browser will redirect to Google
     } catch (err: any) {
+      console.error("[Auth] Unexpected Google OAuth error:", err);
       toast.error(err?.message ?? "حدث خطأ");
       setLoading(false);
     }
