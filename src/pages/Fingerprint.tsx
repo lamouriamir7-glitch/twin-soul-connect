@@ -62,13 +62,13 @@ export default function Fingerprint() {
     }
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("الجلسة منتهية");
+      const myId = auth0SubToUuid(authUser?.sub);
+      if (!myId) throw new Error("الجلسة منتهية");
       const finalNickname = trimmedNick || nickname || "مجهول";
 
       const { error } = await supabase
         .from("profiles")
-        .upsert({ id: user.id, nickname: finalNickname, vector }, { onConflict: "id" });
+        .upsert({ id: myId, nickname: finalNickname, vector }, { onConflict: "id" });
       if (error) throw error;
       localStorage.removeItem("pending_nickname");
       toast.success("تم تسجيل بصمتك النفسية");
