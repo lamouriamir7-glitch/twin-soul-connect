@@ -31,28 +31,24 @@ jobs:
 
       - name: Initialize and Force Assets
         run: |
-          # 1. تهيئة الأندرويد
+          # تهيئة أندرويد وإضافة المنصة
           npx cap init "DigitalTwin" "com.lamouri.twinsoul" --web-dir dist
           npx cap add android
           
-          # 2. توليد الأيقونات الجديدة
+          # تثبيت وتوليد الأيقونات
           npm install @capacitor/assets --save-dev
           npx capacitor-assets generate --android
           
-          # 3. مسح الأيقونات الزرقاء الافتراضية من المجلدات (لضمان التغيير)
-          rm -rf android/app/src/main/res/mipmap-*
-          
-          # 4. حقن الأيقونات الذهبية يدوياً في المسار الصحيح
-          cp -r resources/android/icon/* android/app/src/main/res/ || true
-          
-          # 5. مزامنة التعديلات
+          # مزامنة الملفات ونسخها للمجلدات الصحيحة تلقائياً
           npx cap copy android
           npx cap update android
 
       - name: Total Conflict Resolution (Internal Injection)
         run: |
-          # حل تضارب المكتبات من داخل ملفات أندرويد مباشرة
-          echo 'configurations.all { resolutionStrategy { force "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"; force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10" } }' >> android/app/build.gradle
+          # حل تضارب Kotlin بفرض النسخة 1.9.10 في ملف البناء
+          if [ -f android/app/build.gradle ]; then
+            echo 'configurations.all { resolutionStrategy { force "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"; force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10" } }' >> android/app/build.gradle
+          fi
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -66,9 +62,10 @@ jobs:
       - name: Build Android Project
         run: |
           cd android
+          # إعطاء صلاحية التنفيذ لملف Gradle
           chmod +x gradlew
           ./gradlew clean
-          # تنفيذ البناء مع فرض نسخة Kotlin وتأمين الذاكرة
+          # البدء في بناء الـ APK مع إعدادات الذاكرة وحل التضارب
           ./gradlew assembleDebug \
             -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
             -Pandroid.useAndroidX=true \
