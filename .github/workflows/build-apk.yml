@@ -53,14 +53,6 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          # تنظيف الملفات القديمة قبل البدء
-          ./gradlew clean 
-          # بناء التطبيق مع تجاهل التضاربات البسيطة
-          ./gradlew assembleDebug -Pandroid.useAndroidX=true -Pandroid.enableJetifier=true
-          
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          ./gradlew clean
+          # هنا يكمن العلاج الحقيقي الذي استعملناه سابقاً لحل تضارب Kotlin
+          ./gradlew assembleDebug -Pandroid.useAndroidX=true -Pandroid.enableJetifier=true -PkotlinVersion=1.9.10
