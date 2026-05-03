@@ -28,11 +28,10 @@ jobs:
         run: node generate-icons.js
 
       # --- ضع السطور الجديدة هنا ---
-            - name: Update Android Assets
+      - name: Update Android Assets
         run: |
           npm install @capacitor/assets --save-dev
           npx capacitor-assets generate --android
-          # السطر السحري الذي ينقل الأيقونات للمكان الصحيح
           npx cap copy android
           
       # ----------------------------
