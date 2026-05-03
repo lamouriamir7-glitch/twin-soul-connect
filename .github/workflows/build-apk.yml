@@ -32,7 +32,7 @@ jobs:
       - name: Initialize and Force Assets
         run: |
           # تهيئة أندرويد وإضافة المنصة
-          npx cap init "DigitalTwin" "com.lamouri.twinsoul" --web-dir dist
+          npx cap init "DigitalTwin" "com.lamouri.goldentwin" --web-dir dist
           npx cap add android
           
           # تثبيت وتوليد الأيقونات
