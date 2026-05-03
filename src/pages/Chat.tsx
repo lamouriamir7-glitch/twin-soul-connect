@@ -54,10 +54,12 @@ export default function Chat() {
 
   useEffect(() => {
     if (!id) return;
+    if (authLoading) return;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return navigate("/auth", { replace: true });
-      setMeId(user.id);
+      if (!isAuthenticated || !authUser) return navigate("/auth", { replace: true });
+      const myId = auth0SubToUuid(authUser.sub);
+      if (!myId) return navigate("/auth", { replace: true });
+      setMeId(myId);
 
       const { data: conv } = await supabase
         .from("conversations")
@@ -65,7 +67,7 @@ export default function Chat() {
         .eq("id", id)
         .maybeSingle();
       if (!conv) return navigate("/", { replace: true });
-      const otherId = conv.user_a === user.id ? conv.user_b : conv.user_a;
+      const otherId = conv.user_a === myId ? conv.user_b : conv.user_a;
       const { data: prof } = await supabase
         .from("profiles")
         .select("nickname")
