@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
+import { auth0SubToUuid } from "@/lib/auth-id";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
