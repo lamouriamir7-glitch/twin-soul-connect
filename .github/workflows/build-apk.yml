@@ -28,36 +28,36 @@ jobs:
 
       - name: Initialize and Force Assets
         run: |
-          # 1. تهيئة أندرويد بالهوية الجديدة لكسر الكاش
+          # 1. تهيئة أندرويد باسم حزمة جديد لضمان تحديث الأيقونة على الهاتف
           npx cap init "DigitalTwin" "com.lamouri.goldentwin" --web-dir dist
           npx cap add android
           
-          # 2. معالجة الصورة بمسار محدد ومباشر (بدون عشوائية)
+          # 2. معالجة الصورة من المسار الرئيسي مباشرة (Root)
           mkdir -p resources
           node << 'EOF'
           const sharp = require('sharp');
           const fs = require('fs');
           
-          // المسار المحدد الذي اخترته أنت في مستودعك
-          const sourcePath = 'public/brain_raw.png'; 
+          // المسار الآن مباشر في المجلد الرئيسي كما أكدت
+          const sourcePath = 'brain_raw.png'; 
 
           if (!fs.existsSync(sourcePath)) {
-            console.error(`ERROR: Target file NOT found at ${sourcePath}`);
+            console.error(`ERROR: File not found at ${sourcePath}. Please check if it is in the root folder.`);
             process.exit(1);
           }
 
-          console.log(`Targeting file: ${sourcePath}`);
+          console.log(`Processing image from root: ${sourcePath}`);
 
           sharp(sourcePath)
             .ensureAlpha()
             .resize(1024, 1024)
             .toFormat('png')
             .toFile('resources/icon.png')
-            .then(() => console.log('Success: resources/icon.png created from brain_raw.png'))
+            .then(() => console.log('Success: Icon generated in resources/icon.png'))
             .catch(err => { console.error(err); process.exit(1); });
           EOF
           
-          # 3. توليد الأصول والمزامنة
+          # 3. توليد الأيقونات والمزامنة مع أندرويد
           npm install @capacitor/assets --save-dev
           npx capacitor-assets generate --android --icon-source resources/icon.png
           npx cap copy android
