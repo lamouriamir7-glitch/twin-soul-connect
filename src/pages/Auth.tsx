@@ -80,11 +80,13 @@ export default function Auth() {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
+      const redirectTo = window.location.origin;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo,
           queryParams: { prompt: "select_account" },
+          skipBrowserRedirect: false,
         },
       });
       if (error) {
