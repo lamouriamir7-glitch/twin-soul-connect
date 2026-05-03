@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
+import { auth0SubToUuid } from "@/lib/auth-id";
 import MessagesScreen from "@/components/MessagesScreen";
 import MatchesScreen from "@/components/MatchesScreen";
 import AnalysisSuccess from "@/components/AnalysisSuccess";
