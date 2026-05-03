@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
+import { auth0SubToUuid } from "@/lib/auth-id";
 import MessagesScreen from "@/components/MessagesScreen";
 import MatchesScreen from "@/components/MatchesScreen";
 import AnalysisSuccess from "@/components/AnalysisSuccess";
@@ -29,11 +30,15 @@ const Index = () => {
       return;
     }
     const init = async () => {
-      // البحث عن البروفايل عبر البريد الإلكتروني (مخزن في nickname كـ fallback)
+      const myId = auth0SubToUuid(user.sub);
+      if (!myId) {
+        navigate("/auth", { replace: true });
+        return;
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, nickname, vector, priorities")
-        .eq("nickname", user.email ?? user.sub ?? "")
+        .eq("id", myId)
         .maybeSingle();
       if (!profile) {
         navigate("/fingerprint", { replace: true });

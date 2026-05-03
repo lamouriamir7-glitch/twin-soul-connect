@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
+import { auth0SubToUuid } from "@/lib/auth-id";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +31,7 @@ type Msg = {
 export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth0();
   const [meId, setMeId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState("...");
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -51,10 +54,12 @@ export default function Chat() {
 
   useEffect(() => {
     if (!id) return;
+    if (authLoading) return;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return navigate("/auth", { replace: true });
-      setMeId(user.id);
+      if (!isAuthenticated || !authUser) return navigate("/auth", { replace: true });
+      const myId = auth0SubToUuid(authUser.sub);
+      if (!myId) return navigate("/auth", { replace: true });
+      setMeId(myId);
 
       const { data: conv } = await supabase
         .from("conversations")
@@ -62,7 +67,7 @@ export default function Chat() {
         .eq("id", id)
         .maybeSingle();
       if (!conv) return navigate("/", { replace: true });
-      const otherId = conv.user_a === user.id ? conv.user_b : conv.user_a;
+      const otherId = conv.user_a === myId ? conv.user_b : conv.user_a;
       const { data: prof } = await supabase
         .from("profiles")
         .select("nickname")
@@ -100,7 +105,7 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, navigate]);
+  }, [id, navigate, authLoading, isAuthenticated, authUser]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
