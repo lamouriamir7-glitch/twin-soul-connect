@@ -30,11 +30,15 @@ const Index = () => {
       return;
     }
     const init = async () => {
-      // البحث عن البروفايل عبر البريد الإلكتروني (مخزن في nickname كـ fallback)
+      const myId = auth0SubToUuid(user.sub);
+      if (!myId) {
+        navigate("/auth", { replace: true });
+        return;
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, nickname, vector, priorities")
-        .eq("nickname", user.email ?? user.sub ?? "")
+        .eq("id", myId)
         .maybeSingle();
       if (!profile) {
         navigate("/fingerprint", { replace: true });
