@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 
 export default function Fingerprint() {
   const navigate = useNavigate();
+  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth0();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
@@ -22,25 +23,26 @@ export default function Fingerprint() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return navigate("/auth", { replace: true });
+      if (authLoading) return;
+      if (!isAuthenticated || !authUser) return navigate("/auth", { replace: true });
+      const myId = auth0SubToUuid(authUser.sub);
+      if (!myId) return navigate("/auth", { replace: true });
       const { data } = await supabase
         .from("profiles")
         .select("id, nickname")
-        .eq("id", user.id)
+        .eq("id", myId)
         .maybeSingle();
       setHasExisting(!!data);
       if (data?.nickname) {
         setNickname(data.nickname);
         setNeedsNickname(false);
       } else {
-        // Always ask the user to choose their in-app nickname (don't reuse Google name)
         const pending = localStorage.getItem("pending_nickname");
         if (pending) setNickname(pending);
         setNeedsNickname(true);
       }
     })();
-  }, [navigate]);
+  }, [navigate, authLoading, isAuthenticated, authUser]);
 
   const copyPrompt = async () => {
     await navigator.clipboard.writeText(AI_PROMPT);
