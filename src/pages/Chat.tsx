@@ -31,6 +31,7 @@ type Msg = {
 export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth0();
   const [meId, setMeId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState("...");
   const [messages, setMessages] = useState<Msg[]>([]);
