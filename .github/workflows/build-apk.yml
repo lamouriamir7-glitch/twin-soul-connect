@@ -40,6 +40,11 @@ jobs:
           npx capacitor-assets generate --android
           npx cap copy android
 
+      # حقن العلاج مباشرة في ملفات السيرفر
+      - name: Total Conflict Resolution (The Hammer)
+        run: |
+          echo 'configurations.all { resolutionStrategy { force "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"; force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10" } }' >> android/app/build.gradle
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -50,9 +55,19 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build Android Project
+        # أضفنا هنا إعدادات الذاكرة وإصدار Kotlin لضمان الاستقرار التام
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean
-          # هنا يكمن العلاج الحقيقي الذي استعملناه سابقاً لحل تضارب Kotlin
-          ./gradlew assembleDebug -Pandroid.useAndroidX=true -Pandroid.enableJetifier=true -PkotlinVersion=1.9.10
+          ./gradlew assembleDebug \
+            -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+            -Pandroid.useAndroidX=true \
+            -Pandroid.enableJetifier=true \
+            -PkotlinVersion=1.9.10
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
