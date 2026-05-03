@@ -16,14 +16,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install Dependencies
         
       - name: Install Dependencies
         run: |
-          npm install
+          npm install --force
           npm install sharp @auth0/auth0-react
           npm install @capacitor/cli @capacitor/core @capacitor/android
+
 
       - name: Generate Application Icons
         run: node generate-icons.js  # تشغيل السكربت الذي صنعناه للأيقونات
