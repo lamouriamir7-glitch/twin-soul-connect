@@ -37,8 +37,14 @@ jobs:
       - name: Update Android Assets
         run: |
           npm install @capacitor/assets --save-dev
+          # توليد الأيقونات
           npx capacitor-assets generate --android
+          # التأكد من وجود مجلد المصادر
+          mkdir -p android/app/src/main/res
+          # إجبار النظام على نسخ الأيقونات للمجلد الصحيح يدوياً
+          cp -r resources/android/icon/* android/app/src/main/res/ || true
           npx cap copy android
+          
 
       # حقن العلاج مباشرة في ملفات السيرفر
       - name: Total Conflict Resolution (The Hammer)
