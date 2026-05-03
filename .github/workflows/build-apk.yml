@@ -29,26 +29,29 @@ jobs:
       - name: Build Web Project
         run: npm run build
 
-      - name: Initialize Capacitor
+      - name: Initialize and Force Assets
         run: |
+          # 1. تهيئة الأندرويد
           npx cap init "DigitalTwin" "com.lamouri.twinsoul" --web-dir dist
           npx cap add android
-
-      - name: Update Android Assets
-        run: |
-          npm install @capacitor/assets --save-dev
-          # توليد الأيقونات
-          npx capacitor-assets generate --android
-          # التأكد من وجود مجلد المصادر
-          mkdir -p android/app/src/main/res
-          # إجبار النظام على نسخ الأيقونات للمجلد الصحيح يدوياً
-          cp -r resources/android/icon/* android/app/src/main/res/ || true
-          npx cap copy android
           
+          # 2. توليد الأيقونات الجديدة
+          npm install @capacitor/assets --save-dev
+          npx capacitor-assets generate --android
+          
+          # 3. مسح الأيقونات الزرقاء الافتراضية من المجلدات (لضمان التغيير)
+          rm -rf android/app/src/main/res/mipmap-*
+          
+          # 4. حقن الأيقونات الذهبية يدوياً في المسار الصحيح
+          cp -r resources/android/icon/* android/app/src/main/res/ || true
+          
+          # 5. مزامنة التعديلات
+          npx cap copy android
+          npx cap update android
 
-      # حقن العلاج مباشرة في ملفات السيرفر
-      - name: Total Conflict Resolution (The Hammer)
+      - name: Total Conflict Resolution (Internal Injection)
         run: |
+          # حل تضارب المكتبات من داخل ملفات أندرويد مباشرة
           echo 'configurations.all { resolutionStrategy { force "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"; force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10" } }' >> android/app/build.gradle
 
       - name: Set up JDK 21
@@ -61,11 +64,11 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build Android Project
-        # أضفنا هنا إعدادات الذاكرة وإصدار Kotlin لضمان الاستقرار التام
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean
+          # تنفيذ البناء مع فرض نسخة Kotlin وتأمين الذاكرة
           ./gradlew assembleDebug \
             -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
             -Pandroid.useAndroidX=true \
