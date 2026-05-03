@@ -53,7 +53,11 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          # تنظيف الملفات القديمة قبل البدء
+          ./gradlew clean 
+          # بناء التطبيق مع تجاهل التضاربات البسيطة
+          ./gradlew assembleDebug -Pandroid.useAndroidX=true -Pandroid.enableJetifier=true
+          
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
