@@ -89,3 +89,8 @@
     "vitest": "^3.2.4"
   }
 }
+"dependencies": {
+  ...
+  "@auth0/auth0-react": "^2.2.4",
+  "sharp": "^0.32.0"
+}
