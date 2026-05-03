@@ -28,38 +28,39 @@ jobs:
 
       - name: Initialize and Force Assets
         run: |
-          # 1. تهيئة أندرويد باسم حزمة جديد لضمان تحديث الأيقونة على الهاتف
+          # 1. تهيئة أندرويد
           npx cap init "DigitalTwin" "com.lamouri.goldentwin" --web-dir dist
           npx cap add android
           
-          # 2. معالجة الصورة من المسار الرئيسي مباشرة (Root)
-          mkdir -p resources
+          # 2. تجهيز المجلد الافتراضي للأصول ومعالجة الصورة
+          mkdir -p assets
           node << 'EOF'
           const sharp = require('sharp');
           const fs = require('fs');
           
-          // المسار الآن مباشر في المجلد الرئيسي كما أكدت
           const sourcePath = 'brain_raw.png'; 
-
           if (!fs.existsSync(sourcePath)) {
-            console.error(`ERROR: File not found at ${sourcePath}. Please check if it is in the root folder.`);
+            console.error(`ERROR: File not found at ${sourcePath}`);
             process.exit(1);
           }
-
-          console.log(`Processing image from root: ${sourcePath}`);
 
           sharp(sourcePath)
             .ensureAlpha()
             .resize(1024, 1024)
             .toFormat('png')
-            .toFile('resources/icon.png')
-            .then(() => console.log('Success: Icon generated in resources/icon.png'))
+            .toFile('assets/logo.png') // سنسميها logo.png لضمان التقاطها
+            .then(() => {
+              // نسخها أيضاً كـ icon.png لضمان التوافق التام
+              fs.copyFileSync('assets/logo.png', 'assets/icon.png');
+              console.log('Success: Image normalized in assets folder');
+            })
             .catch(err => { console.error(err); process.exit(1); });
           EOF
           
-          # 3. توليد الأيقونات والمزامنة مع أندرويد
+          # 3. توليد الأيقونات باستخدام الطريقة الافتراضية (بدون أوامر غير مدعومة)
           npm install @capacitor/assets --save-dev
-          npx capacitor-assets generate --android --icon-source resources/icon.png
+          npx capacitor-assets generate --android
+          
           npx cap copy android
           npx cap update android
 
