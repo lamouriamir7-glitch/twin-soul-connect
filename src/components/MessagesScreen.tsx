@@ -3,9 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WisdomBox } from "@/components/WisdomBox";
-import { MessageCircle, Search, RefreshCw, LogOut, Brain } from "lucide-react";
+import { MessageCircle, Search, RefreshCw, LogOut } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS, fr, ru, zhCN } from "date-fns/locale";
+import { useT } from "@/i18n/LanguageContext";
+import { AppTitle } from "@/components/AppTitle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+
+const LOCALES: Record<string, any> = { ar, en: enUS, fr, ru, zh: zhCN };
 
 type ConversationItem = {
   id: string;
@@ -29,6 +34,7 @@ export default function MessagesScreen({
   onLogout,
 }: Props) {
   const navigate = useNavigate();
+  const { t, lang } = useT();
   const [items, setItems] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,7 +72,7 @@ export default function MessagesScreen({
           return {
             id: c.id,
             other_id: otherId,
-            other_nickname: nameById.get(otherId) ?? "مجهول",
+            other_nickname: nameById.get(otherId) ?? t("unknown"),
             last_message: lastMsg?.content,
             last_at: lastMsg?.created_at,
           };
@@ -81,18 +87,14 @@ export default function MessagesScreen({
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
+        <AppTitle size="sm" />
         <div className="flex items-center gap-2">
-          <Brain className="w-7 h-7 text-primary" />
-          <h1 className="font-display text-2xl md:text-3xl title-gold-glow">
-            التوأم الرقمي
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+          <LanguageSelector />
           <button
             onClick={onLogout}
             className="text-muted-foreground hover:text-destructive transition"
-            title="خروج"
+            title={t("logout")}
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -110,30 +112,30 @@ export default function MessagesScreen({
           }}
         >
           <Search className="w-4 h-4" />
-          <span className="font-bold">توائمي</span>
+          <span className="font-bold">{t("my_twins")}</span>
         </Button>
         <Button
           onClick={onRenewFingerprint}
           variant="outline"
           className="border-primary/40 hover:border-primary font-display gap-2 h-12"
         >
-          <RefreshCw className="w-4 h-4" /> جدّد بصمتي
+          <RefreshCw className="w-4 h-4" /> {t("renew_fingerprint")}
         </Button>
       </div>
 
       <section>
         <h2 className="font-display text-lg text-muted-foreground mb-3 flex items-center gap-2">
-          <MessageCircle className="w-4 h-4" /> الرسائل
+          <MessageCircle className="w-4 h-4" /> {t("messages")}
         </h2>
         {loading ? (
-          <p className="text-center text-muted-foreground py-12">جارٍ التحميل...</p>
+          <p className="text-center text-muted-foreground py-12">{t("loading")}</p>
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
             <p className="text-muted-foreground mb-3">
-              لا توجد محادثات بعد. ابدأ من قائمة توائمك.
+              {t("no_conversations")}
             </p>
             <Button onClick={onOpenMatches} variant="outline" size="sm">
-              اكتشف توائمك
+              {t("discover_twins")}
             </Button>
           </div>
         ) : (
@@ -142,7 +144,7 @@ export default function MessagesScreen({
               <li key={it.id}>
                 <button
                   onClick={() => navigate(`/chat/${it.id}`)}
-                  className="w-full text-right rounded-xl border border-border hover:border-primary/60 bg-card/50 hover:bg-card/80 p-4 transition flex items-center gap-3 shadow-cosmic"
+                  className="w-full text-start rounded-xl border border-border hover:border-primary/60 bg-card/50 hover:bg-card/80 p-4 transition flex items-center gap-3 shadow-cosmic"
                 >
                   <div className="w-11 h-11 rounded-full border border-primary/40 flex items-center justify-center font-display text-primary bg-primary/5">
                     {it.other_nickname.charAt(0)}
@@ -152,14 +154,14 @@ export default function MessagesScreen({
                       {it.other_nickname}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {it.last_message ?? "لا رسائل بعد"}
+                      {it.last_message ?? t("no_messages_yet")}
                     </div>
                   </div>
                   {it.last_at && (
                     <div className="text-[10px] text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(new Date(it.last_at), {
                         addSuffix: true,
-                        locale: ar,
+                        locale: LOCALES[lang] ?? ar,
                       })}
                     </div>
                   )}

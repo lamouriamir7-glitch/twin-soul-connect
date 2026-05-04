@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
-import { auth0SubToUuid } from "@/lib/auth-id";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { WisdomBox } from "@/components/WisdomBox";
@@ -11,10 +9,14 @@ import { toast } from "sonner";
 import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare, UserCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCurrentUser } from "@/lib/use-current-user";
+import { useT } from "@/i18n/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function Fingerprint() {
   const navigate = useNavigate();
-  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth0();
+  const { id: meUserId, isAuthenticated, isLoading: authLoading, auth0User } = useCurrentUser();
+  const { t } = useT();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
@@ -24,13 +26,11 @@ export default function Fingerprint() {
   useEffect(() => {
     (async () => {
       if (authLoading) return;
-      if (!isAuthenticated || !authUser) return navigate("/auth", { replace: true });
-      const myId = auth0SubToUuid(authUser.sub);
-      if (!myId) return navigate("/auth", { replace: true });
+      if (!isAuthenticated || !meUserId) return navigate("/auth", { replace: true });
       const { data } = await supabase
         .from("profiles")
         .select("id, nickname")
-        .eq("id", myId)
+        .eq("id", meUserId)
         .maybeSingle();
       setHasExisting(!!data);
       if (data?.nickname) {
@@ -42,36 +42,35 @@ export default function Fingerprint() {
         setNeedsNickname(true);
       }
     })();
-  }, [navigate, authLoading, isAuthenticated, authUser]);
+  }, [navigate, authLoading, isAuthenticated, meUserId, auth0User]);
 
   const copyPrompt = async () => {
     await navigator.clipboard.writeText(AI_PROMPT);
-    toast.success("تم نسخ النص. الصقه عند ذكائك الاصطناعي");
+    toast.success(t("copied_paste_at_ai"));
   };
 
   const submit = async () => {
     const trimmedNick = nickname.trim();
     if (needsNickname && !trimmedNick) {
-      toast.error("اختر اسماً مستعاراً يميّزك في الفضاء");
+      toast.error(t("pick_nickname"));
       return;
     }
     const vector = processUserVector(code);
     if (!vector) {
-      toast.error("الشيفرة غير صحيحة. تأكد من نسخها كاملةً");
+      toast.error(t("invalid_code"));
       return;
     }
     setLoading(true);
     try {
-      const myId = auth0SubToUuid(authUser?.sub);
-      if (!myId) throw new Error("الجلسة منتهية");
-      const finalNickname = trimmedNick || nickname || "مجهول";
+      if (!meUserId) throw new Error(t("session_expired"));
+      const finalNickname = trimmedNick || nickname || t("unknown");
 
       const { error } = await supabase
         .from("profiles")
-        .upsert({ id: myId, nickname: finalNickname, vector }, { onConflict: "id" });
+        .upsert({ id: meUserId, nickname: finalNickname, vector }, { onConflict: "id" });
       if (error) throw error;
       localStorage.removeItem("pending_nickname");
-      toast.success("تم تسجيل بصمتك النفسية");
+      toast.success(t("fingerprint_registered"));
       navigate("/", { replace: true, state: { justAnalyzed: true } });
     } catch (e: any) {
       toast.error(e.message ?? "خطأ");
@@ -83,49 +82,35 @@ export default function Fingerprint() {
   return (
     <main className="starfield min-h-screen px-4 py-10 relative">
       <div className="relative z-10 max-w-3xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> رجوع
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t("back")}
+          </button>
+          <LanguageSelector />
+        </div>
 
         <div className="text-center mb-8">
           <FingerprintIcon className="w-14 h-14 mx-auto text-primary animate-float-slow mb-3" />
           <h1 className="font-display text-3xl md:text-5xl text-gradient-primary mb-2">
-            {hasExisting ? "تجديد البصمة" : "بصمتك النفسية"}
+            {hasExisting ? t("renew_fingerprint_title") : t("your_fingerprint")}
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            {hasExisting
-              ? "تطوّر حواراتك يستحق بصمة جديدة. ستحتفظ بكل رسائلك وروابطك."
-              : "ثلاث خطوات تفصلك عن لقاء صدى روحك."}
+            {hasExisting ? t("renew_desc") : t("three_steps")}
           </p>
         </div>
 
         {!hasExisting && (
           <section className="rounded-2xl border border-border bg-card/40 backdrop-blur-xl p-6 shadow-cosmic mb-6">
             <h2 className="font-display text-lg text-gradient-primary mb-4 text-center">
-              كيف تحصل على شيفرتك؟
+              {t("how_to_get_code")}
             </h2>
             <ol className="space-y-4">
-              <Step
-                n="١"
-                icon={<Copy className="w-4 h-4" />}
-                title="انسخ النص أدناه"
-                desc="هذا هو الطلب الذي سيحلّل شخصيتك."
-              />
-              <Step
-                n="٢"
-                icon={<MessageSquare className="w-4 h-4" />}
-                title="افتح ذكاءك الاصطناعي المفضّل"
-                desc="ChatGPT، Gemini، Claude، DeepSeek، أو أيّ مساعد اعتدت الدردشة معه. كلما طالت محادثاتك السابقة معه كانت بصمتك أصدق."
-              />
-              <Step
-                n="٣"
-                icon={<ClipboardPaste className="w-4 h-4" />}
-                title="الصق النص واطلب التحليل"
-                desc="سيعطيك في الأخير شيفرة طويلة (نص Base64). انسخها كاملةً وارجع للصقها هنا."
-              />
+              <Step n="1" icon={<Copy className="w-4 h-4" />} title={t("step1_title")} desc={t("step1_desc")} />
+              <Step n="2" icon={<MessageSquare className="w-4 h-4" />} title={t("step2_title")} desc={t("step2_desc")} />
+              <Step n="3" icon={<ClipboardPaste className="w-4 h-4" />} title={t("step3_title")} desc={t("step3_desc")} />
             </ol>
           </section>
         )}
@@ -133,17 +118,15 @@ export default function Fingerprint() {
         {needsNickname && (
           <section className="rounded-2xl border border-gold/40 bg-card/60 backdrop-blur-xl p-6 shadow-gold-glow space-y-3 mb-6">
             <h2 className="font-display text-xl flex items-center gap-2">
-              <UserCircle2 className="w-5 h-5 text-gold" /> اسمك في هذا الفضاء
+              <UserCircle2 className="w-5 h-5 text-gold" /> {t("your_name_here")}
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              اختر اسماً مستعاراً يميّزك. لن يرى الآخرون اسمك الحقيقي، فقط هذا الاسم.
-            </p>
-            <Label className="font-display sr-only">اسم مستعار</Label>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t("nickname_desc")}</p>
+            <Label className="font-display sr-only">{t("your_name_here")}</Label>
             <Input
               value={nickname}
               maxLength={40}
               onChange={(e) => setNickname(e.target.value)}
-              placeholder="هويّتك في الفضاء..."
+              placeholder={t("nickname_placeholder")}
               className="bg-input/60 border-border"
             />
           </section>
@@ -152,25 +135,25 @@ export default function Fingerprint() {
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-xl text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" /> نصّ الطلب
+              <Sparkles className="w-4 h-4 text-primary" /> {t("prompt_text")}
             </h2>
             <Button onClick={copyPrompt} variant="outline" size="sm" className="gap-2 border-primary/40">
-              <Copy className="w-4 h-4" /> نسخ النص
+              <Copy className="w-4 h-4" /> {t("copy_text")}
             </Button>
           </div>
-          <div className="rounded-lg bg-muted/40 border border-border p-4 max-h-44 overflow-y-auto font-mono text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
+          <div className="rounded-lg bg-muted/40 border border-border p-4 max-h-44 overflow-y-auto font-mono text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap" dir="rtl">
             {AI_PROMPT}
           </div>
         </section>
 
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4 mt-6">
           <h2 className="font-display text-xl flex items-center gap-2">
-            <ClipboardPaste className="w-4 h-4 text-primary" /> الصق شيفرتك هنا
+            <ClipboardPaste className="w-4 h-4 text-primary" /> {t("paste_code_here")}
           </h2>
           <Textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="الصق هنا الشيفرة الطويلة التي أعطاك إياها ذكاؤك الاصطناعي..."
+            placeholder={t("paste_placeholder")}
             rows={5}
             className="font-mono text-xs bg-input/60 border-border"
           />
@@ -179,7 +162,7 @@ export default function Fingerprint() {
             disabled={loading || !code.trim() || (needsNickname && !nickname.trim())}
             className="w-full bg-gradient-to-l from-primary to-accent text-primary-foreground font-display tracking-wider shadow-violet-glow"
           >
-            {loading ? "جارٍ التحليل..." : hasExisting ? "تجديد البصمة" : "تثبيت البصمة"}
+            {loading ? t("analyzing") : hasExisting ? t("renew_fingerprint_title") : t("save_fingerprint")}
           </Button>
         </section>
 
@@ -189,17 +172,7 @@ export default function Fingerprint() {
   );
 }
 
-function Step({
-  n,
-  icon,
-  title,
-  desc,
-}: {
-  n: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
+function Step({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) {
   return (
     <li className="flex gap-4 items-start">
       <div className="relative shrink-0">
@@ -217,4 +190,3 @@ function Step({
     </li>
   );
 }
-

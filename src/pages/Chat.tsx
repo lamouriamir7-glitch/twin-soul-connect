@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
-import { auth0SubToUuid } from "@/lib/auth-id";
+import { useCurrentUser } from "@/lib/use-current-user";
+import { useT } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,7 +31,8 @@ type Msg = {
 export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth0();
+  const { id: currentId, isAuthenticated, isLoading: authLoading } = useCurrentUser();
+  const { t } = useT();
   const [meId, setMeId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState("...");
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -56,9 +57,8 @@ export default function Chat() {
     if (!id) return;
     if (authLoading) return;
     (async () => {
-      if (!isAuthenticated || !authUser) return navigate("/auth", { replace: true });
-      const myId = auth0SubToUuid(authUser.sub);
-      if (!myId) return navigate("/auth", { replace: true });
+      if (!isAuthenticated || !currentId) return navigate("/auth", { replace: true });
+      const myId = currentId;
       setMeId(myId);
 
       const { data: conv } = await supabase
@@ -73,7 +73,7 @@ export default function Chat() {
         .select("nickname")
         .eq("id", otherId)
         .maybeSingle();
-      setOtherName(prof?.nickname ?? "مجهول");
+      setOtherName(prof?.nickname ?? t("unknown"));
 
       const { data: msgs } = await supabase
         .from("messages")
@@ -105,7 +105,7 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, navigate, authLoading, isAuthenticated, authUser]);
+  }, [id, navigate, authLoading, isAuthenticated, currentId, t]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -134,7 +134,7 @@ export default function Chat() {
       .from("chat-media")
       .upload(path, file, { contentType: file.type, upsert: false });
     if (error) {
-      toast.error("فشل الرفع: " + error.message);
+      toast.error(t("upload_failed") + error.message);
       return null;
     }
     const { data } = supabase.storage.from("chat-media").getPublicUrl(path);
@@ -171,11 +171,11 @@ export default function Chat() {
     const f = e.target.files?.[0];
     if (!f) return;
     if (!f.type.startsWith("image/")) {
-      toast.error("اختر صورة فقط");
+      toast.error(t("pick_image_only"));
       return;
     }
     if (f.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة أكبر من 5MB");
+      toast.error(t("image_too_big"));
       return;
     }
     setPendingImage(f);
@@ -213,7 +213,7 @@ export default function Chat() {
         });
       }, 1000);
     } catch (e) {
-      toast.error("لم نستطع الوصول للميكروفون");
+      toast.error(t("mic_denied"));
     }
   };
 
@@ -243,7 +243,7 @@ export default function Chat() {
         <div className="flex-1">
           <div className="font-display text-lg leading-tight">{otherName}</div>
           <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <Lock className="w-3 h-3" /> محادثة مشفّرة
+            <Lock className="w-3 h-3" /> {t("encrypted_chat")}
           </div>
         </div>
       </header>
@@ -251,7 +251,7 @@ export default function Chat() {
       <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto px-4 py-6 space-y-3 max-w-3xl mx-auto w-full">
         {messages.length === 0 && (
           <p className="text-center text-muted-foreground text-sm mt-12 font-display">
-            ابدأ الحوار مع توأمك...
+            {t("start_chat_with_twin")}
           </p>
         )}
         {messages.map((m) => {
@@ -269,7 +269,7 @@ export default function Chat() {
                   <a href={m.media_url} target="_blank" rel="noreferrer">
                     <img
                       src={m.media_url}
-                      alt="مرفق"
+                      alt=""
                       className="rounded-xl max-h-72 object-cover mb-1"
                       loading="lazy"
                     />
@@ -314,14 +314,14 @@ export default function Chat() {
                 {String(recordSeconds % 60).padStart(2, "0")}
               </span>
               <span className="text-xs text-muted-foreground flex-1">
-                جارٍ التسجيل... (حدّ أقصى 60 ث)
+                {t("recording_hint")}
               </span>
               <Button
                 size="sm"
                 onClick={stopRecording}
                 className="bg-destructive text-destructive-foreground gap-1"
               >
-                <Square className="w-3.5 h-3.5" /> إرسال
+                <Square className="w-3.5 h-3.5" /> {t("send")}
               </Button>
             </div>
           ) : (
@@ -338,7 +338,7 @@ export default function Chat() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending || uploading}
                 className="text-muted-foreground hover:text-primary p-2 disabled:opacity-50"
-                title="إرفاق صورة"
+                title={t("attach_image")}
               >
                 <ImageIcon className="w-5 h-5" />
               </button>
@@ -347,7 +347,7 @@ export default function Chat() {
                 onClick={startRecording}
                 disabled={sending || uploading}
                 className="text-muted-foreground hover:text-primary p-2 disabled:opacity-50"
-                title="رسالة صوتية"
+                title={t("voice_message")}
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -361,7 +361,7 @@ export default function Chat() {
                     send();
                   }
                 }}
-                placeholder="اكتب لتوأمك..."
+                placeholder={t("write_to_twin")}
                 className="bg-input/60 border-border flex-1"
               />
               <Button

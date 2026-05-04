@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Sparkles, Search, CheckCircle2, MessageCircle, LogOut, Brain } from "lucide-react";
+import { Sparkles, Search, CheckCircle2, MessageCircle, LogOut } from "lucide-react";
 import { WisdomBox } from "@/components/WisdomBox";
+import { AppTitle } from "@/components/AppTitle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useT } from "@/i18n/LanguageContext";
 
 interface Props {
   nickname: string;
@@ -15,20 +18,17 @@ export default function AnalysisSuccess({
   onOpenMessages,
   onLogout,
 }: Props) {
+  const { t } = useT();
   return (
     <div className="space-y-8">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
+        <AppTitle size="sm" />
         <div className="flex items-center gap-2">
-          <Brain className="w-7 h-7 text-primary" />
-          <h1 className="font-display text-2xl md:text-3xl title-gold-glow">
-            التوأم الرقمي
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+          <LanguageSelector />
           <button
             onClick={onLogout}
             className="text-muted-foreground hover:text-destructive transition"
-            title="خروج"
+            title={t("logout")}
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -45,18 +45,18 @@ export default function AnalysisSuccess({
           className="font-display text-3xl md:text-4xl text-gradient-primary mx-auto max-w-xl px-2 py-1"
           style={{ lineHeight: 1.6 }}
         >
-          لقد تم تحليل بصمتك بنجاح
+          {t("fingerprint_analyzed")}
         </h2>
 
         <div className="space-y-2 max-w-md mx-auto px-4">
           <p className="text-foreground/90 text-base md:text-lg leading-loose">
-            أهلاً بك يا <span className="text-gold font-display font-bold">{nickname}</span>
+            {t("welcome_user")} <span className="text-gold font-display font-bold">{nickname}</span>
           </p>
           <p className="text-muted-foreground text-sm md:text-base leading-loose">
-            بصمتك النفسية محفوظة في الفضاء.
+            {t("fingerprint_saved")}
           </p>
           <p className="text-muted-foreground text-sm md:text-base leading-loose">
-            الخطوة التالية: اكتشف من يشاركك صدى الروح.
+            {t("next_step_discover")}
           </p>
         </div>
       </section>
@@ -72,7 +72,7 @@ export default function AnalysisSuccess({
           }}
         >
           <Sparkles className="w-5 h-5" />
-          <span className="font-bold">اكتشف توائمي</span>
+          <span className="font-bold">{t("discover_my_twins")}</span>
           <Search className="w-5 h-5" />
         </Button>
 
@@ -81,7 +81,7 @@ export default function AnalysisSuccess({
           className="text-sm text-muted-foreground hover:text-primary transition flex items-center gap-2 mt-2"
         >
           <MessageCircle className="w-4 h-4" />
-          أو تصفّح رسائلك لاحقاً
+          {t("or_browse_later")}
         </button>
       </div>
 
