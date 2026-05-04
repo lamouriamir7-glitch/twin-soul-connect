@@ -105,7 +105,7 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, navigate, authLoading, isAuthenticated, authUser]);
+  }, [id, navigate, authLoading, isAuthenticated, currentId, t]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
