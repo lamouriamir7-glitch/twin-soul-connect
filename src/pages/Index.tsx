@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
-import { auth0SubToUuid } from "@/lib/auth-id";
 import MessagesScreen from "@/components/MessagesScreen";
 import MatchesScreen from "@/components/MatchesScreen";
 import AnalysisSuccess from "@/components/AnalysisSuccess";
 import { toast } from "sonner";
 import { useGlobalMessageNotifications } from "@/hooks/useGlobalMessageNotifications";
+import { useCurrentUser } from "@/lib/use-current-user";
+import { useT } from "@/i18n/LanguageContext";
 
 type Profile = { id: string; nickname: string; vector: number[]; priorities: any };
 
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, isLoading: authLoading, user, logout: auth0Logout } = useAuth0();
+  const { id: meUserId, isAuthenticated, isLoading: authLoading, logout } = useCurrentUser();
+  const { t } = useT();
   const justAnalyzed = (location.state as { justAnalyzed?: boolean } | null)?.justAnalyzed === true;
   const [me, setMe] = useState<Profile | null>(null);
   const [view, setView] = useState<"messages" | "matches" | "success">(
@@ -25,20 +26,15 @@ const Index = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated || !meUserId) {
       navigate("/auth", { replace: true });
       return;
     }
     const init = async () => {
-      const myId = auth0SubToUuid(user.sub);
-      if (!myId) {
-        navigate("/auth", { replace: true });
-        return;
-      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, nickname, vector, priorities")
-        .eq("id", myId)
+        .eq("id", meUserId)
         .maybeSingle();
       if (!profile) {
         navigate("/fingerprint", { replace: true });
@@ -54,7 +50,7 @@ const Index = () => {
       setLoading(false);
     };
     init();
-  }, [authLoading, isAuthenticated, user, navigate]);
+  }, [authLoading, isAuthenticated, meUserId, navigate]);
 
   useGlobalMessageNotifications(me?.id ?? null);
 
@@ -63,16 +59,17 @@ const Index = () => {
     if (me) await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
   };
 
-  const logout = async () => {
-    await auth0Logout({ logoutParams: { returnTo: window.location.origin + "/auth" } });
-    toast.success("إلى لقاء آخر");
+  const onLogout = async () => {
+    await logout();
+    toast.success(t("bye"));
+    navigate("/auth", { replace: true });
   };
 
   if (loading || !me) {
     return (
       <main className="starfield min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground animate-shimmer font-display">
-          يستيقظ توأمك...
+          {t("twin_awakening")}
         </p>
       </main>
     );
@@ -86,14 +83,14 @@ const Index = () => {
             nickname={me.nickname}
             onOpenMatches={() => setView("matches")}
             onOpenMessages={() => setView("messages")}
-            onLogout={logout}
+            onLogout={onLogout}
           />
         ) : view === "messages" ? (
           <MessagesScreen
             meId={me.id}
             onOpenMatches={() => setView("matches")}
             onRenewFingerprint={() => navigate("/fingerprint")}
-            onLogout={logout}
+            onLogout={onLogout}
           />
         ) : (
           <MatchesScreen
