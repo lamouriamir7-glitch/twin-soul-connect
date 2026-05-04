@@ -10,7 +10,7 @@ import { useT } from "@/i18n/LanguageContext";
 import { AppTitle } from "@/components/AppTitle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
-const LOCALES: Record<string, Locale> = { ar, en: enUS, fr, ru, zh: zhCN };
+const LOCALES: Record<string, any> = { ar, en: enUS, fr, ru, zh: zhCN };
 
 type ConversationItem = {
   id: string;
