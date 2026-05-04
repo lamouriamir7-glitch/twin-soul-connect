@@ -3,9 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WisdomBox } from "@/components/WisdomBox";
-import { MessageCircle, Search, RefreshCw, LogOut, Brain } from "lucide-react";
+import { MessageCircle, Search, RefreshCw, LogOut } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS, fr, ru, zhCN } from "date-fns/locale";
+import { useT } from "@/i18n/LanguageContext";
+import { AppTitle } from "@/components/AppTitle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+
+const LOCALES: Record<string, Locale> = { ar, en: enUS, fr, ru, zh: zhCN };
 
 type ConversationItem = {
   id: string;
