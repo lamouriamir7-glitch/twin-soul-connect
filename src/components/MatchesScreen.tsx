@@ -11,6 +11,7 @@ import {
 } from "@/lib/twin-engine";
 import { toast } from "sonner";
 import { ArrowLeft, Sparkles, MessageCircle, SlidersHorizontal } from "lucide-react";
+import { useT } from "@/i18n/LanguageContext";
 
 type Profile = {
   id: string;
@@ -32,6 +33,7 @@ export default function MatchesScreen({
   onBack,
 }: Props) {
   const navigate = useNavigate();
+  const { t } = useT();
   const [matches, setMatches] = useState<Array<Profile & { score: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [showPriorities, setShowPriorities] = useState(false);
@@ -90,7 +92,7 @@ export default function MatchesScreen({
           onClick={onBack}
           className="flex items-center gap-2 text-muted-foreground hover:text-primary transition"
         >
-          <ArrowLeft className="w-4 h-4" /> الرسائل
+          <ArrowLeft className="w-4 h-4" /> {t("back_to_messages")}
         </button>
         <Button
           variant="outline"
@@ -98,25 +100,25 @@ export default function MatchesScreen({
           onClick={() => setShowPriorities((v) => !v)}
           className="gap-2 border-primary/40"
         >
-          <SlidersHorizontal className="w-4 h-4" /> الأولويات
+          <SlidersHorizontal className="w-4 h-4" /> {t("priorities")}
         </Button>
       </div>
 
       <div className="text-center">
         <Sparkles className="w-10 h-10 mx-auto text-primary animate-shimmer mb-2" />
         <h1 className="font-display text-3xl md:text-4xl text-gradient-primary">
-          توائمك في الكون
+          {t("your_twins_in_universe")}
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          مرتّبة حسب صدى روحك
+          {t("sorted_by_soul")}
         </p>
       </div>
 
       {showPriorities && (
         <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4">
-          <h2 className="font-display text-lg">رجّح ما يهمك</h2>
+          <h2 className="font-display text-lg">{t("weight_what_matters")}</h2>
           <p className="text-xs text-muted-foreground">
-            الصفات ذات الأولوية الأعلى ترفع توائمها في القائمة.
+            {t("priorities_hint")}
           </p>
           {DIMENSION_KEYS.map((key) => (
             <div key={key} className="space-y-1.5">
@@ -141,10 +143,10 @@ export default function MatchesScreen({
       )}
 
       {loading ? (
-        <p className="text-center text-muted-foreground py-12">جارٍ البحث...</p>
+        <p className="text-center text-muted-foreground py-12">{t("searching")}</p>
       ) : matches.length === 0 ? (
         <p className="text-center text-muted-foreground py-12">
-          لا يوجد توائم بعد. ادعُ أصدقاءك للانضمام.
+          {t("no_twins_yet")}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -152,7 +154,7 @@ export default function MatchesScreen({
             <li key={m.id}>
               <button
                 onClick={() => openChat(m)}
-                className="w-full text-right rounded-xl border border-border hover:border-primary/60 bg-card/50 hover:bg-card/80 p-4 transition group flex items-center gap-4 shadow-cosmic"
+                className="w-full text-start rounded-xl border border-border hover:border-primary/60 bg-card/50 hover:bg-card/80 p-4 transition group flex items-center gap-4 shadow-cosmic"
               >
                 <div className="w-12 h-12 rounded-full border border-primary/40 flex items-center justify-center font-display text-lg text-primary bg-primary/5">
                   {m.nickname.charAt(0)}
@@ -160,10 +162,10 @@ export default function MatchesScreen({
                 <div className="flex-1 min-w-0">
                   <div className="font-display text-lg truncate">{m.nickname}</div>
                   <div className="text-xs text-muted-foreground">
-                    صدى الروح
+                    {t("soul_echo")}
                   </div>
                 </div>
-                <div className="text-left">
+                <div className="text-end">
                   <div className="font-mono text-2xl text-gradient-primary">
                     {m.score.toFixed(1)}%
                   </div>
