@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from "@/integrations/supabase/client";
-import { auth0SubToUuid } from "@/lib/auth-id";
+import { useCurrentUser } from "@/lib/use-current-user";
+import { useT } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,7 +31,8 @@ type Msg = {
 export default function Chat() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth0();
+  const { id: currentId, isAuthenticated, isLoading: authLoading } = useCurrentUser();
+  const { t } = useT();
   const [meId, setMeId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState("...");
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -56,9 +57,8 @@ export default function Chat() {
     if (!id) return;
     if (authLoading) return;
     (async () => {
-      if (!isAuthenticated || !authUser) return navigate("/auth", { replace: true });
-      const myId = auth0SubToUuid(authUser.sub);
-      if (!myId) return navigate("/auth", { replace: true });
+      if (!isAuthenticated || !currentId) return navigate("/auth", { replace: true });
+      const myId = currentId;
       setMeId(myId);
 
       const { data: conv } = await supabase
@@ -73,7 +73,7 @@ export default function Chat() {
         .select("nickname")
         .eq("id", otherId)
         .maybeSingle();
-      setOtherName(prof?.nickname ?? "مجهول");
+      setOtherName(prof?.nickname ?? t("unknown"));
 
       const { data: msgs } = await supabase
         .from("messages")
