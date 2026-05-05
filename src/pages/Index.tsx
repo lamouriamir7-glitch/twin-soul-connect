@@ -14,7 +14,7 @@ type Profile = { id: string; nickname: string; vector: number[]; priorities: any
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { id: meUserId, isAuthenticated, isLoading: authLoading, logout } = useCurrentUser();
+  const { id: msUserId, isAuthenticated, isLoading: authLoading, logout } = useCurrentUser();
   const { t } = useT();
   const justAnalyzed = (location.state as { justAnalyzed?: boolean } | null)?.justAnalyzed === true;
   const [me, setMe] = useState<Profile | null>(null);
@@ -26,31 +26,42 @@ const Index = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated || !meUserId) {
+    if (!isAuthenticated || !msUserId) {
       navigate("/auth", { replace: true });
       return;
     }
+
     const init = async () => {
+      // 1. محاولة جلب البيانات بالـ ID النصي
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, nickname, vector, priorities")
-        .eq("id", meUserId)
+        .eq("id", msUserId)
         .maybeSingle();
+
       if (!profile) {
-        navigate("/fingerprint", { replace: true });
-        return;
+        // 2. بدلاً من الطرد لصفحة fingerprint المكسورة، ننشئ الملف هنا فوراً
+        const { data: newProfile, error } = await supabase
+          .from("profiles")
+          .upsert({ 
+            id: msUserId, 
+            nickname: "Twin_User",
+            vector: Array(30).fill(0) 
+          })
+          .select()
+          .single();
+
+        if (newProfile) {
+          setMe(newProfile as Profile);
+        }
+      } else {
+        setMe(profile as Profile);
       }
-      setMe({
-        id: profile.id,
-        nickname: profile.nickname,
-        vector: profile.vector as unknown as number[],
-        priorities: profile.priorities ?? {},
-      });
-      setPriorities((profile.priorities as Record<string, number>) ?? {});
       setLoading(false);
     };
+
     init();
-  }, [authLoading, isAuthenticated, meUserId, navigate]);
+  }, [authLoading, isAuthenticated, msUserId, navigate]);
 
   useGlobalMessageNotifications(me?.id ?? null);
 
@@ -89,7 +100,7 @@ const Index = () => {
           <MessagesScreen
             meId={me.id}
             onOpenMatches={() => setView("matches")}
-            onRenewFingerprint={() => navigate("/fingerprint")}
+            onRenewFingerprint={() => setView("success")}
             onLogout={onLogout}
           />
         ) : (
