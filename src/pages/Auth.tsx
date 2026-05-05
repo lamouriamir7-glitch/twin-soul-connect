@@ -1,32 +1,34 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth0 } from "@auth0/auth0-react";
 import { Button } from "@/components/ui/button";
 import { WisdomBox } from "@/components/WisdomBox";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AppTitle } from "@/components/AppTitle";
 import { useT } from "@/i18n/LanguageContext";
-import { useCurrentUser } from "@/lib/use-current-user";
+import { setGuestActive, ensureGuestId, isGuestActive } from "@/lib/use-current-user";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   const { t } = useT();
-  const { isAuthenticated, isLoading } = useCurrentUser();
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/", { replace: true });
+    if (isAuthenticated || isGuestActive()) navigate("/", { replace: true });
   }, [isAuthenticated, navigate]);
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
+    await loginWithRedirect({
+      authorizationParams: {
+        connection: "google-oauth2",
+        redirect_uri: window.location.origin,
       },
     });
   };
 
   const continueAsGuest = () => {
+    ensureGuestId();
+    setGuestActive(true);
     navigate("/", { replace: true });
   };
 
