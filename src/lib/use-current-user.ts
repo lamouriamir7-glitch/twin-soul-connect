@@ -2,15 +2,15 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useMemo } from "react";
 
 /**
- * هاد الخطاف (Hook) بيجيب المستخدم الحالي من Auth0 
- * وبيرسل الـ ID الأصلي بدون أي تحويلات UUID معقدة
+ * هذا الخطاف (Hook) يقوم بجلب بيانات المستخدم من Auth0 
+ * ويرسل الـ ID الأصلي مباشرة لضمان التوافق مع قاعدة بيانات Supabase
  */
 export const useCurrentUser = () => {
   const { user, isAuthenticated, isLoading } = useAuth0();
 
   const currentUser = useMemo(() => {
-    // نستخدم الـ sub القادم من Auth0 كـ ID أساسي
-    // الـ ID رح يكون بصيغة مثل 'auth0|12345' وهي مقبولة الآن في القاعدة
+    // نستخدم الـ sub (المعرف) القادم من Auth0 مباشرة كـ id
+    // هذا يمنع خطأ الـ Foreign Key لأننا عدلنا القاعدة لتقبل النصوص
     const id = isAuthenticated && user?.sub ? user.sub : null;
 
     return {
