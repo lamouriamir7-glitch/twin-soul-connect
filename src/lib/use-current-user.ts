@@ -1,43 +1,61 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+// (مجمع هوية Auth0 أو ضيف UUID) : مزود هوية موحد
+import { useAuth0 } from "@auth0/auth0-react";
+import { authSubToUuid } from "./auth-id";
 
-export const useCurrentUser = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const GUEST_KEY = "guest_uuid";
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+function genUuid(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  const s = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+  return s.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
-      }
-    );
+export function ensureGuestId(): string {
+  let id = localStorage.getItem(GUEST_KEY);
+  if (!id) {
+    id = genUuid();
+    localStorage.setItem(GUEST_KEY, id);
+  }
+  return id;
+}
 
-    return () => subscription.unsubscribe();
-  }, []);
+export function clearGuestId() {
+  localStorage.removeItem(GUEST_KEY);
+}
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/auth";
-  };
+export function isGuestActive(): boolean {
+  return localStorage.getItem("is_guest") === "1";
+}
+
+export function setGuestActive(v: boolean) {
+  if (v) localStorage.setItem("is_guest", "1");
+  else localStorage.removeItem("is_guest");
+}
+
+export function useCurrentUser() {
+  const { isAuthenticated, isLoading, user, logout } = useAuth0();
+  const guestActive = isGuestActive();
+  const guestId = guestActive ? ensureGuestId() : null;
+
+  const id = isAuthenticated && user?.sub ? authSubToUuid(user.sub) : guestId;
 
   return {
-    id: user?.id ?? null,
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    isGuest: false,
-    logout,
+    id,
+    isLoading: isLoading && !guestActive,
+    isAuthenticated: isAuthenticated || guestActive,
+    isGuest: guestActive && !isAuthenticated,
+    authOUser: user ?? null,
+    logout: async () => {
+      if (guestActive) {
+        setGuestActive(false);
+      }
+      if (isAuthenticated) {
+        await logout({ logoutParams: { returnTo: window.location.origin } });
+      }
+    },
   };
-};
-
-export const ensureGuestId = () => "guest";
-export const clearGuestId = () => ({});
-export const isGuestActive = () => false;
-export const setGuestActive = (v: boolean) => {};
+}
