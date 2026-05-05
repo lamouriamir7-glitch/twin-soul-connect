@@ -1,11 +1,10 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useMemo } from "react";
 
-// هذه الدالة هي الحل: بدلاً من تحويل الـ ID لـ UUID، نرجعه كما هو
-// هذا يرضي الكود ويرضي قاعدة البيانات في نفس الوقت
+// هذه الدالة هي "المفتاح"؛ ستقوم بتمرير الـ ID كما هو دون تحويله لـ UUID
 export const auth0SubToUuid = (sub: string) => sub;
 
-// إرضاء نظام الضيف لكي لا ينهار Vercel كما حدث في سجلات الخطأ
+// دوال التحكم في نظام "الضيف" - أعدتها لكي لا ينهار ملف Auth.tsx
 export const ensureGuestId = () => "guest_" + Math.random().toString(36).substr(2, 9);
 export const clearGuestId = () => {};
 export const isGuestActive = () => false;
@@ -23,8 +22,8 @@ export const useCurrentUser = () => {
       user,
       isAuthenticated,
       isLoading,
-      isGuest: false, // قيمة ثابتة لتعطيل نظام الضيف مؤقتاً وحل التعارض
-      auth0User: user || null,
+      isGuest: false,
+      authUser: user || null,
       logout: () => auth0Logout({ logoutParams: { returnTo: window.location.origin } })
     };
   }, [user, isAuthenticated, isLoading, auth0Logout]);
