@@ -159,7 +159,7 @@ export default function Fingerprint() {
           />
           <Button
             onClick={submit}
-            disabled={loading || !code.trim() || (needsNickname && !nickname.trim())}
+            disabled={loading || !code.trim()}
             className="w-full bg-gradient-to-l from-primary to-accent text-primary-foreground font-display tracking-wider shadow-violet-glow"
           >
             {loading ? t("analyzing") : hasExisting ? t("renew_fingerprint_title") : t("save_fingerprint")}
