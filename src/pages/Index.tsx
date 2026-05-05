@@ -9,12 +9,7 @@ import { useGlobalMessageNotifications } from "@/hooks/useGlobalMessageNotificat
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useT } from "@/i18n/LanguageContext";
 
-type Profile = {
-  id: string;
-  nickname: string;
-  vector: number[];
-  priorities: any;
-};
+type Profile = { id: string; nickname: string; vector: number[]; priorities: any };
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,7 +17,6 @@ const Index = () => {
   const { id: msUserId, isAuthenticated, isLoading: authLoading, logout } = useCurrentUser();
   const { t } = useT();
   const justAnalyzed = (location.state as { justAnalyzed?: boolean } | null)?.justAnalyzed === true;
-
   const [me, setMe] = useState<Profile | null>(null);
   const [view, setView] = useState<"messages" | "matches" | "success">(
     justAnalyzed ? "success" : "messages"
@@ -32,14 +26,13 @@ const Index = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    
     if (!isAuthenticated || !msUserId) {
       navigate("/auth", { replace: true });
       return;
     }
 
     const init = async () => {
-      // هذا هو الكود الأصلي الذي كان يبحث عن البروفايل
+      // 1. محاولة جلب البيانات بالـ ID النصي
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, nickname, vector, priorities")
@@ -47,17 +40,23 @@ const Index = () => {
         .maybeSingle();
 
       if (!profile) {
-        // هذا السطر هو الذي كان يرسلك لصفحة البصمة ويظهر الخطأ
-        navigate("/fingerprint", { replace: true });
-        return;
-      }
+        // 2. بدلاً من الطرد لصفحة fingerprint المكسورة، ننشئ الملف هنا فوراً
+        const { data: newProfile, error } = await supabase
+          .from("profiles")
+          .upsert({ 
+            id: msUserId, 
+            nickname: "Twin_User",
+            vector: Array(30).fill(0) 
+          })
+          .select()
+          .single();
 
-      setMe({
-        ...profile,
-        vector: profile.vector as unknown as number[],
-      } as Profile);
-      
-      setPriorities((profile.priorities as Record<string, number>) ?? {});
+        if (newProfile) {
+          setMe(newProfile as Profile);
+        }
+      } else {
+        setMe(profile as Profile);
+      }
       setLoading(false);
     };
 
@@ -68,9 +67,7 @@ const Index = () => {
 
   const savePriorities = async (p: Record<string, number>) => {
     setPriorities(p);
-    if (me) {
-      await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
-    }
+    if (me) await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
   };
 
   const onLogout = async () => {
