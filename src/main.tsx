@@ -8,6 +8,8 @@ createRoot(document.getElementById("root")!).render(
   <Auth0Provider
     domain="dev-ii30ojv5xtugbd1u.eu.auth0.com"
     clientId="BhO9vrG9BU9kwvH0BeWnECT5CbSXpXcy"
+    cacheLocation="localstorage"
+    useRefreshTokens={true}
     authorizationParams={{
       redirect_uri: window.location.origin,
     }}

@@ -59,7 +59,7 @@ export function useCurrentUser() {
         // نتركه على نفس المعرّف ليعود لاحقاً إلى بياناته
       }
       if (isAuthenticated) {
-        await logout({ logoutParams: { returnTo: window.location.origin + "/auth" } });
+        await logout({ logoutParams: { returnTo: window.location.origin } });
       }
     },
   };
