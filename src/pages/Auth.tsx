@@ -1,34 +1,32 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WisdomBox } from "@/components/WisdomBox";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AppTitle } from "@/components/AppTitle";
 import { useT } from "@/i18n/LanguageContext";
-import { setGuestActive, ensureGuestId, isGuestActive } from "@/lib/use-current-user";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   const { t } = useT();
+  const { isAuthenticated, isLoading } = useCurrentUser();
 
   useEffect(() => {
-    if (isAuthenticated || isGuestActive()) navigate("/", { replace: true });
+    if (isAuthenticated) navigate("/", { replace: true });
   }, [isAuthenticated, navigate]);
 
   const signInWithGoogle = async () => {
-    await loginWithRedirect({
-      authorizationParams: {
-        connection: "google-oauth2",
-        redirect_uri: window.location.origin,
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
       },
     });
   };
 
   const continueAsGuest = () => {
-    ensureGuestId();
-    setGuestActive(true);
     navigate("/", { replace: true });
   };
 
@@ -39,7 +37,7 @@ export default function Auth() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8 flex flex-col items-center gap-3">
+        <div className="text-center mb-8 flex-col items-center gap-3">
           <AppTitle size="lg" />
           <p className="text-muted-foreground text-sm tracking-wide">
             {t("app_subtitle")}
@@ -56,6 +54,7 @@ export default function Auth() {
           >
             {isLoading ? t("connecting") : t("sign_in_google")}
           </Button>
+
           <Button
             type="button"
             onClick={continueAsGuest}
