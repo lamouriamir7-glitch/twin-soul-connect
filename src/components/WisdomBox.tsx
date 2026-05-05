@@ -55,12 +55,13 @@ export const WisdomBox = () => {
         </div>
 
         <div
+          dir={lang === "ar" ? "rtl" : "ltr"}
           className={`transition-all duration-500 ${
             visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
           }`}
         >
           <p className="text-center text-gradient-gold font-display text-lg md:text-2xl leading-relaxed font-medium">
-            «{q.text}»
+            {lang === "ar" ? `«${q.text}»` : `“${q.text}”`}
           </p>
           <p className="text-center mt-3 text-gold/70 font-display text-sm tracking-widest">
             — {q.author} —
