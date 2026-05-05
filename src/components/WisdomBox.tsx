@@ -48,7 +48,7 @@ export const WisdomBox = () => {
           <span className="h-px w-12 bg-gradient-to-l from-transparent to-gold/60" />
           <Sparkles className="w-4 h-4 text-gold animate-shimmer" />
           <span className="text-xs tracking-[0.3em] text-gold/80 font-display uppercase">
-            حكمة
+            {label}
           </span>
           <Sparkles className="w-4 h-4 text-gold animate-shimmer" />
           <span className="h-px w-12 bg-gradient-to-r from-transparent to-gold/60" />
