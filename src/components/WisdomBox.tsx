@@ -1,47 +1,31 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
-
-const QUOTES = [
-  {
-    text: "لم يكن هدفي سوى محاولة أن أحيا وفقاً للدوافع التي تنبع من ذاتي الحقيقية، فلماذا كان ذلك بهذه الصعوبة؟",
-    author: "هيرمان هيسه",
-  },
-  {
-    text: "وتحسبُ أنك جُرمٌ صغيرٌ.. وفيكَ انطوى العالمُ الأكبرُ.",
-    author: "علي بن أبي طالب",
-  },
-  {
-    text: "من ينظر إلى الخارج يحلم، ومن ينظر إلى الداخل يستيقظ.",
-    author: "كارل يونغ",
-  },
-  { text: "معرفة نفسك هي بداية كل حكمة.", author: "أرسطو" },
-  {
-    text: "أنت لست قطرة في محيط، أنت المحيط بأكمله في قطرة.",
-    author: "جلال الدين الرومي",
-  },
-  {
-    text: "من يعرف الآخرين فهو عالم، ومن يعرف نفسه فهو حكيم.",
-    author: "لاو تسو",
-  },
-  { text: "اعرف نفسك بنفسك.", author: "سقراط" },
-];
+import { useT } from "@/i18n/LanguageContext";
+import { QUOTES, WISDOM_LABEL } from "@/i18n/wisdom";
 
 export const WisdomBox = () => {
-  const [index, setIndex] = useState(() => Math.floor(Math.random() * QUOTES.length));
+  const { lang } = useT();
+  const quotes = QUOTES[lang] ?? QUOTES.ar;
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * quotes.length));
   const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    setIndex(Math.floor(Math.random() * quotes.length));
+  }, [lang, quotes.length]);
 
   useEffect(() => {
     const t = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
-        setIndex((i) => (i + 1) % QUOTES.length);
+        setIndex((i) => (i + 1) % quotes.length);
         setVisible(true);
       }, 600);
     }, 9000);
     return () => clearInterval(t);
-  }, []);
+  }, [quotes.length]);
 
-  const q = QUOTES[index];
+  const q = quotes[index];
+  const label = WISDOM_LABEL[lang] ?? WISDOM_LABEL.ar;
 
   return (
     <div className="relative w-full max-w-2xl mx-auto my-8 group">
@@ -64,7 +48,7 @@ export const WisdomBox = () => {
           <span className="h-px w-12 bg-gradient-to-l from-transparent to-gold/60" />
           <Sparkles className="w-4 h-4 text-gold animate-shimmer" />
           <span className="text-xs tracking-[0.3em] text-gold/80 font-display uppercase">
-            حكمة
+            {label}
           </span>
           <Sparkles className="w-4 h-4 text-gold animate-shimmer" />
           <span className="h-px w-12 bg-gradient-to-r from-transparent to-gold/60" />
