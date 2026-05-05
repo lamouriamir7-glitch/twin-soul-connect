@@ -26,10 +26,30 @@ const SECRET_KEY = 7.5;
  * فك تشفير البصمة المُجلَبة من الذكاء الاصطناعي → مصفوفة 30 بُعداً
  * القيم المجهولة تُمثَّل بـ 0.0 (لأن البرومبت يطلب من الذكاء تجنب الوسط)
  */
+function sanitizeDecodedJson(raw: string): string {
+  let s = raw.trim();
+  // إزالة سياج الماركداون إن وُجد
+  s = s.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  // قص ما قبل أول [ وما بعد آخر ]
+  const first = s.indexOf("[");
+  const last = s.lastIndexOf("]");
+  if (first !== -1 && last !== -1 && last > first) s = s.slice(first, last + 1);
+  // إزالة أي ] داخلية مزروعة بالخطأ (نُبقي فقط الأخيرة)
+  s = "[" + s.slice(1, -1).replace(/\]/g, "") + "]";
+  // استبدال الفواصل العربية والمسافات الزائدة
+  s = s.replace(/،/g, ",").replace(/\s+/g, " ");
+  // إضافة 0 قبل النقطة العشرية المجردة:  .17 -> 0.17  و  -.17 -> -0.17
+  s = s.replace(/(^|[\s,\[\-+])\.(\d)/g, "$10.$2");
+  // إزالة فواصل زائدة قبل ]
+  s = s.replace(/,\s*]/g, "]");
+  return s;
+}
+
 export function processUserVector(encodedBase64: string): number[] | null {
   try {
     const decodedString = atob(encodedBase64.trim());
-    const encryptedArray = JSON.parse(decodedString);
+    const sanitized = sanitizeDecodedJson(decodedString);
+    const encryptedArray = JSON.parse(sanitized);
     if (!Array.isArray(encryptedArray) || encryptedArray.length !== VECTOR_LENGTH) {
       // توافق مع الإصدار القديم (10 أبعاد)
       if (Array.isArray(encryptedArray) && encryptedArray.length === 10) {
