@@ -9,12 +9,7 @@ import { useGlobalMessageNotifications } from "@/hooks/useGlobalMessageNotificat
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useT } from "@/i18n/LanguageContext";
 
-type Profile = { 
-  id: string; 
-  nickname: string; 
-  vector: number[]; 
-  priorities: any 
-};
+type Profile = { id: string; nickname: string; vector: number[]; priorities: any };
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,7 +17,7 @@ const Index = () => {
   const { id: msUserId, isAuthenticated, isLoading: authLoading, logout } = useCurrentUser();
   const { t } = useT();
   const justAnalyzed = (location.state as { justAnalyzed?: boolean } | null)?.justAnalyzed === true;
-  
+
   const [me, setMe] = useState<Profile | null>(null);
   const [view, setView] = useState<"messages" | "matches" | "success">(
     justAnalyzed ? "success" : "messages"
@@ -31,8 +26,10 @@ const Index = () => {
   const [priorities, setPriorities] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    // 1. إذا كان النظام لا يزال يتأكد من هويتك، انتظر.
     if (authLoading) return;
-    
+
+    // 2. إذا لم تكن مسجلاً، اذهب لصفحة الدخول.
     if (!isAuthenticated || !msUserId) {
       navigate("/auth", { replace: true });
       return;
@@ -40,43 +37,34 @@ const Index = () => {
 
     const init = async () => {
       try {
-        // محاولة جلب البروفايل بالـ ID النصي الجديد
-        const { data: profile, error } = await supabase
+        // 3. جلب البيانات بالمعرف النصي الجديد
+        const { data: profile } = await supabase
           .from("profiles")
-          .select("id, nickname, vector, priorities")
+          .select("*")
           .eq("id", msUserId)
           .maybeSingle();
 
-        if (!profile) {
-          // إذا لم يجد بروفايل، ننشئه فوراً بالبيانات الأساسية لفتح الموقع
-          const defaultVector = Array(30).fill(0);
-          const { data: newProfile, error: createError } = await supabase
+        if (profile) {
+          setMe(profile as Profile);
+          setPriorities((profile.priorities as Record<string, number>) ?? {});
+        } else {
+          // 4. إذا لم يجد بروفايل، ننشئه فوراً (هذا هو الإصلاح الجوهري)
+          const { data: newProfile } = await supabase
             .from("profiles")
             .upsert({ 
               id: msUserId, 
-              nickname: "Twin_User",
-              vector: defaultVector,
-              updated_at: new Date().toISOString()
+              nickname: "Twin_User", 
+              vector: Array(30).fill(0) 
             })
             .select()
             .single();
-
-          if (newProfile) {
-            setMe(newProfile as Profile);
-            setPriorities((newProfile.priorities as Record<string, number>) ?? {});
-          }
-        } else {
-          // معالجة البيانات القادمة لضمان عدم انهيار الواجهة
-          setMe({
-            ...profile,
-            vector: Array.isArray(profile.vector) ? profile.vector : Array(30).fill(0)
-          } as Profile);
-          setPriorities((profile.priorities as Record<string, number>) ?? {});
+          
+          if (newProfile) setMe(newProfile as Profile);
         }
       } catch (err) {
-        console.error("Initialization error:", err);
+        console.error("Critical Init Error:", err);
       } finally {
-        // ضمان خروج الموقع من حالة التحميل السوداء مهما حدث
+        // 5. أهم سطر: توقف عن إظهار شاشة التحميل مهما حدث
         setLoading(false);
       }
     };
@@ -88,9 +76,7 @@ const Index = () => {
 
   const savePriorities = async (p: Record<string, number>) => {
     setPriorities(p);
-    if (me) {
-      await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
-    }
+    if (me) await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
   };
 
   const onLogout = async () => {
@@ -99,54 +85,38 @@ const Index = () => {
     navigate("/auth", { replace: true });
   };
 
-  // شاشة التحميل (ستختفي فور انتهاء الـ init)
+  // 6. لا تجعل الشاشة السوداء تسيطر؛ إذا انتهى التحميل، اظهر الواجهة
   if (loading) {
     return (
       <main className="starfield min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground animate-shimmer font-display">
-          {t("twin_awakening") || "Awakening Your Twin..."}
-        </p>
+        <p className="text-muted-foreground animate-shimmer">{t("twin_awakening")}</p>
       </main>
     );
   }
 
-  // إذا انتهى التحميل ولم نجد بروفايل (حالة نادرة جداً الآن)، نظهر رسالة خطأ بسيطة بدل الشاشة السوداء
-  if (!me) {
-    return (
-      <main className="starfield min-h-screen flex items-center justify-center p-4 text-center">
-        <div>
-          <p className="text-red-400 mb-4">Initial setup failed.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-white/10 rounded-lg"
-          >
-            Retry Connection
-          </button>
-        </div>
-      </main>
-    );
-  }
+  // إذا وصلنا هنا ولم يجهز 'me' بعد، نستخدم بروفايل مؤقت لكي لا ينهار التطبيق
+  const activeMe = me || { id: msUserId || "", nickname: "User", vector: [], priorities: {} };
 
   return (
     <main className="starfield min-h-screen px-4 py-8 relative">
       <div className="relative z-10 max-w-3xl mx-auto">
         {view === "success" ? (
           <AnalysisSuccess
-            nickname={me.nickname}
+            nickname={activeMe.nickname}
             onOpenMatches={() => setView("matches")}
             onOpenMessages={() => setView("messages")}
             onLogout={onLogout}
           />
         ) : view === "messages" ? (
           <MessagesScreen
-            meId={me.id}
+            meId={activeMe.id}
             onOpenMatches={() => setView("matches")}
             onRenewFingerprint={() => setView("success")}
             onLogout={onLogout}
           />
         ) : (
           <MatchesScreen
-            me={me}
+            me={activeMe as Profile}
             priorities={priorities}
             onPrioritiesChange={savePriorities}
             onBack={() => setView("messages")}
