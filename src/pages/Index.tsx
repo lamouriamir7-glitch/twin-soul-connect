@@ -104,7 +104,7 @@ const Index = () => {
           <MessagesScreen
             meId={me.id}
             onOpenMatches={() => setView("matches")}
-            onRenewFingerprint={() => setView("success")}
+            onRenewFingerprint={() => navigate("/fingerprint")}
             onLogout={onLogout}
           />
         ) : (
