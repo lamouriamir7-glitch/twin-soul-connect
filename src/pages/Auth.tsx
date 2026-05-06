@@ -6,28 +6,28 @@ import { WisdomBox } from "@/components/WisdomBox";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AppTitle } from "@/components/AppTitle";
 import { useT } from "@/i18n/LanguageContext";
-import { useCurrentUser, ensureGuestId, setGuestActive, isGuestActive } from "@/lib/use-current-user";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { t } = useT();
   const { isAuthenticated, isLoading } = useCurrentUser();
 
-  const continueAsGuest = () => {
-    ensureGuestId();
-    setGuestActive(true);
-    navigate("/", { replace: true });
-  };
-  const { t } = useT();
-
   useEffect(() => {
-    if (isAuthenticated || isGuestActive()) navigate("/", { replace: true });
+    if (isAuthenticated) navigate("/", { replace: true });
   }, [isAuthenticated, navigate]);
 
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth` },
+      options: {
+        redirectTo: "https://twin-soul-connect.vercel.app",
+      },
     });
+  };
+
+  const continueAsGuest = () => {
+    navigate("/", { replace: true });
   };
 
   return (
