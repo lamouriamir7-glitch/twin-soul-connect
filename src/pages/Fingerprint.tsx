@@ -13,7 +13,7 @@
 // 5. يلصق الـ Base64 في هذا التطبيق.
 // 6. التطبيق يفك التشفير إلى Vector مكون من 30 قيمة.
 // 7. يخزن الـ Vector في جدول profiles.
-// 8. يعود للمستخدم إلى الصفحة الرئيسية.
+// 8. يعود المستخدم إلى الصفحة الرئيسية.
 //
 // الحماية:
 // - المستخدم غير المسجل لا يمكنه الوصول (توجيه إلى /auth).
@@ -29,7 +29,7 @@ import { useCurrentUser } from "@/lib/use-current-user";
 import { AI_PROMPT, processUserVector } from "@/lib/wind-engine";
 import { toast } from "sonner";
 
-// أيقونات (افتراضية بسيطة - استبدلها بمكوناتك الفعلية)
+// أيقونات بسيطة (استبدلها بـ lucide-react إذا أردت)
 const CopyIcon = () => <span>📋</span>;
 const SparklesIcon = () => <span>✨</span>;
 const FingerprintIcon = () => <span>🔍</span>;
@@ -51,14 +51,12 @@ export default function Fingerprint() {
     if (authLoading) return;
 
     if (!isAuthenticated || !userId) {
-      // غير مسجل → ارجعه لصفحة الدخول
       navigate("/auth", { replace: true });
       return;
     }
 
-    // تحقق إذا كان يحتاج إلى اسم مستعار
     checkIfNeedsNickname();
-  }, [authLoading, isAuthenticated, userId]);
+  }, [authLoading, isAuthenticated, userId, navigate]);
 
   // --------------------------------------------------
   // فحص: هل المستخدم لديه nickname؟
@@ -75,7 +73,6 @@ export default function Fingerprint() {
         setNeedsNickname(true);
       }
     } catch {
-      // إذا لم يوجد profile بعد، يحتاج nickname
       setNeedsNickname(true);
     }
   };
@@ -96,51 +93,43 @@ export default function Fingerprint() {
   // إرسال البصمة: فك التشفير + تخزين في Supabase
   // --------------------------------------------------
   const submit = async () => {
-    // (1) تحقق من الـ Nickname
     const trimmedNick = nickname.trim();
     if (needsNickname && !trimmedNick) {
       toast.error("⚠️ الرجاء اختيار اسم مستعار أولاً");
       return;
     }
 
-    // (2) تحقق من الكود المدخل
     if (!code.trim()) {
       toast.error("⚠️ الرجاء لصق كود Base64 من الذكاء الاصطناعي");
       return;
     }
 
-    // (3) فك تشفير الـ Vector
     const vector = processUserVector(code.trim());
     if (!vector || vector.length !== 30) {
       toast.error("❌ الكود غير صالح. تأكد من لصق كود Base64 كاملاً");
       return;
     }
 
-    // (4) تأكد أن الـ Vector ليس كله أصفار
     const hasValues = vector.some((v) => v !== 0);
     if (!hasValues) {
       toast.error("❌ البصمة فارغة. أعد المحاولة مع نص أطول");
       return;
     }
 
-    // (5) تخزين في قاعدة البيانات
     setLoading(true);
     try {
       const finalNickname = trimmedNick || "User_" + userId.substring(0, 6);
 
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({
-          id: userId,
-          nickname: finalNickname,
-          vector: vector,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("profiles").upsert({
+        id: userId,
+        nickname: finalNickname,
+        vector: vector,
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) throw error;
 
       toast.success("✅ تم تسجيل بصمتك النفسية بنجاح!");
-      // العودة للرئيسية مع إشارة أن التحليل تم
       navigate("/", { replace: true, state: { justAnalyzed: true } });
     } catch (e: any) {
       console.error("Submit error:", e);
@@ -168,7 +157,7 @@ export default function Fingerprint() {
     <main className="min-h-screen bg-black px-4 py-8">
       <div className="max-w-3xl mx-auto">
 
-        {/* ----- شريط علوي: رجوع + لغة ----- */}
+        {/* ----- شريط علوي: رجوع ----- */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigate(-1)}
