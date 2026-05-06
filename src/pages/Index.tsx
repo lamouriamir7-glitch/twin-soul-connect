@@ -1,35 +1,11 @@
 // ============================================================
 // src/pages/Index.tsx
 // ============================================================
-// ميكانيكا الملف (Developer Notes):
-// ------------------------------------------------------------
-// هذا الملف هو "بوابة العبور" (Guard) للتطبيق.
-// منطقه كالتالي:
-//
-// 1. Default State: المتجه يبدأ بـ 30 صفراً [0,0,0...].
-// 2. The Check:
-//    - إذا كان vector === null أو كل قيمه أصفار
-//      → المستخدم جديد أو لم يحلل بصمته بعد.
-// 3. Action:
-//    - توجيه إجباري إلى "/fingerprint".
-//    - قفل واجهة المراسلة (Messages) حتى تكتمل البصمة.
-// 4. إذا كان vector يحوي قيماً حقيقية:
-//    - عرض شاشة المراسلة (MessagesScreen).
-//
-// حالات إضافية:
-// - مستخدم غير مسجل → وضع ضيف مع زر تسجيل الدخول.
-// - أثناء التحميل → شاشة "INITIALIZING SYSTEM...".
-// ============================================================
-
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/lib/use-current-user";
-import MessagesScreen from "@/components/MessagesScreen";
 
-// ----------------------------------------------------
-// أنواع البيانات
-// ----------------------------------------------------
 type Profile = {
   id: string;
   nickname: string;
@@ -37,59 +13,35 @@ type Profile = {
   priorities: any;
 };
 
-// ----------------------------------------------------
-// دوال مساعدة
-// ----------------------------------------------------
-
-// بناء Profile للزائر (ضيف)
 const buildFallback = (id: string): Profile => ({
   id,
   nickname: "Guest",
-  vector: Array(30).fill(0), // 30 صفراً
+  vector: Array(30).fill(0),
   priorities: {},
 });
 
-// فحص: هل المتجه صالح (يحتوي على قيم حقيقية غير صفرية)؟
-// هذه الدالة هي قلب البوابة المنطقية.
 const isValidVector = (vector: number[] | null | undefined): boolean => {
-  // null أو undefined → غير صالح
-  if (!vector || !Array.isArray(vector)) return false;
-
-  // مصفوفة فارغة → غير صالح
-  if (vector.length === 0) return false;
-
-  // هل هناك أي قيمة لا تساوي صفر؟
-  // إذا كل القيم 0 → false (توجيه إلى /fingerprint)
-  // إذا أي قيمة ≠ 0 → true (عرض Messages)
+  if (!vector || !Array.isArray(vector) || vector.length === 0) return false;
   return vector.some((value) => value !== 0);
 };
 
-// ----------------------------------------------------
-// المكون الرئيسي
-// ----------------------------------------------------
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id, isAuthenticated, isLoading: authLoading } = useCurrentUser();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // useRef يمنع إعادة التشغيل مرتين (في React Strict Mode)
   const initialized = useRef(false);
 
   useEffect(() => {
-    // ⏳ انتظر حتى ينتهي فحص المصادقة
     if (authLoading) return;
-
-    // 🛑 امنع التشغيل المزدوج
     if (initialized.current) return;
     initialized.current = true;
 
     const init = async () => {
       try {
-        // --------------------------------------------------
-        // الحالة 1: مستخدم غير مسجل → وضع ضيف
-        // --------------------------------------------------
+        // مستخدم غير مسجل → وضع ضيف
         if (!isAuthenticated || !id) {
           const guestId = "guest_" + Math.random().toString(36).substr(2, 8);
           setProfile(buildFallback(guestId));
@@ -97,9 +49,7 @@ const Index = () => {
           return;
         }
 
-        // --------------------------------------------------
-        // الحالة 2: مستخدم مسجل → جلب Profile من قاعدة البيانات
-        // --------------------------------------------------
+        // مستخدم مسجل → جلب Profile
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
@@ -107,8 +57,6 @@ const Index = () => {
           .single();
 
         if (error) {
-          console.error("❌ Profile fetch error:", error);
-          // إذا فشل الجلب، نتعامل معه كضيف
           setProfile(buildFallback(id));
           setLoading(false);
           return;
@@ -117,23 +65,14 @@ const Index = () => {
         const profileData = data as Profile;
         setProfile(profileData);
 
-        // --------------------------------------------------
-        // الحالة 3: فحص البصمة - The Check
-        // --------------------------------------------------
+        // فحص البصمة
         if (!isValidVector(profileData.vector)) {
-          // المتجه صفري أو فارغ → توجيه إجباري لتحليل البصمة
-          console.log("🔒 Vector صفري → توجيه إلى /fingerprint");
           navigate("/fingerprint", { replace: true });
           return;
         }
 
-        // --------------------------------------------------
-        // الحالة 4: المتجه صالح → جاهز للعرض
-        // --------------------------------------------------
-        console.log("✅ Vector صالح → عرض MessagesScreen");
         setLoading(false);
       } catch (e) {
-        console.error("❌ Init error:", e);
         setProfile(buildFallback(id || "guest_fallback"));
         setLoading(false);
       }
@@ -142,52 +81,88 @@ const Index = () => {
     init();
   }, [authLoading, isAuthenticated, id, navigate]);
 
-  // --------------------------------------------------
-  // شاشة التحميل الأولية
-  // --------------------------------------------------
+  // شاشة تحميل
   if (loading || authLoading || !profile) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-b from-[#1a0533] to-[#0d001a] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg animate-pulse">
-            INITIALIZING SYSTEM...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // --------------------------------------------------
-  // وضع الضيف: شاشة ترحيب مع زر تسجيل الدخول
-  // --------------------------------------------------
-  if (profile.id.startsWith("guest_")) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-4xl text-white font-bold mb-4">
-            Twin Soul Connect
-          </h1>
-          <p className="text-xl text-gray-300 mb-8">
-            اكتشف توأم روحك الرقمي من خلال تحليل البصمة النفسية
-          </p>
-          <button
-            onClick={() => navigate("/auth")}
-            className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-lg"
-          >
-            تسجيل الدخول
-          </button>
+          <span className="text-4xl animate-pulse">🔮</span>
+          <p className="text-purple-300 mt-4 animate-pulse">INITIALIZING SYSTEM...</p>
         </div>
       </main>
     );
   }
 
-  // --------------------------------------------------
-  // مستخدم مسجل + بصمة صالحة → الواجهة الرئيسية
-  // --------------------------------------------------
+  // وضع الضيف أو نجاح التحليل
+  const justAnalyzed = location.state?.justAnalyzed;
+
+  if (profile.id.startsWith("guest_") || justAnalyzed) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-[#1a0533] via-[#2d1060] to-[#0d001a] flex flex-col items-center justify-center px-4 relative overflow-hidden">
+        {/* نجوم */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-10 left-10 w-1 h-1 bg-white rounded-full opacity-60"></div>
+          <div className="absolute top-20 right-20 w-1 h-1 bg-purple-300 rounded-full opacity-40"></div>
+          <div className="absolute bottom-40 left-1/4 w-0.5 h-0.5 bg-yellow-400 rounded-full opacity-70"></div>
+          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-200 rounded-full opacity-50"></div>
+          <div className="absolute bottom-20 right-10 w-0.5 h-0.5 bg-white rounded-full opacity-60"></div>
+        </div>
+
+        <div className="relative z-10 text-center max-w-md">
+          {justAnalyzed ? (
+            <>
+              <span className="text-6xl">✅</span>
+              <h2 className="text-2xl font-bold text-yellow-400 mt-4 mb-2">
+                لقد تم تحليل بصمتك بنجاح
+              </h2>
+              <p className="text-purple-200 mb-2">أهلاً بك يا {profile.nickname}</p>
+              <p className="text-purple-300/70 text-sm mb-8">
+                بصمتك النفسية محفوظة في الفضاء
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate("/matches")}
+                  className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold hover:from-purple-500 hover:to-purple-400 transition"
+                >
+                  🔍 اكتشف توأمك
+                </button>
+                <button
+                  onClick={() => setProfile({ ...profile, id: profile.id })}
+                  className="w-full py-3 px-6 rounded-xl border border-purple-500/50 text-purple-300 hover:bg-purple-500/10 transition"
+                >
+                  أو تصفح رسائلك لاحقاً
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-6xl">🔮</span>
+              <h1 className="text-4xl font-bold mt-4 mb-2">
+                <span className="bg-gradient-to-r from-purple-300 via-purple-100 to-yellow-400 bg-clip-text text-transparent">
+                  Twin Soul Connect
+                </span>
+              </h1>
+              <p className="text-yellow-400/80 text-lg mb-2">التـوأم الرقمـي</p>
+              <p className="text-purple-300/70 mb-8">
+                اكتشف توأم روحك الرقمي من خلال تحليل البصمة النفسية
+              </p>
+              <button
+                onClick={() => navigate("/auth")}
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-500 hover:to-purple-400 transition text-lg font-semibold"
+              >
+                تسجيل الدخول
+              </button>
+            </>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  // مستخدم مسجل + بصمة صالحة → شاشة الرسائل
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900">
-      <MessagesScreen profile={profile} />
+    <main className="min-h-screen bg-gradient-to-b from-[#1a0533] to-[#0d001a]">
+      <p className="text-white text-center pt-20">Messages Screen (تحت الإنشاء)</p>
     </main>
   );
 };
