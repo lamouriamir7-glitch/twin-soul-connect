@@ -7,17 +7,17 @@ export const useCurrentUser = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
         setIsLoading(false);
       }
     );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -30,6 +30,7 @@ export const useCurrentUser = () => {
   return {
     id: user?.id ?? null,
     user,
+    auth0User: null as any,
     isAuthenticated: !!user,
     isLoading,
     isGuest: false,
@@ -40,4 +41,4 @@ export const useCurrentUser = () => {
 export const ensureGuestId = () => "guest";
 export const clearGuestId = () => ({});
 export const isGuestActive = () => false;
-export const setGuestActive = (v: boolean) => {};
+export const setGuestActive = (_v: boolean) => {};
