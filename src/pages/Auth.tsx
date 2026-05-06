@@ -20,7 +20,7 @@ export default function Auth() {
   const { t } = useT();
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/", { replace: true });
+    if (isAuthenticated || isGuestActive()) navigate("/", { replace: true });
   }, [isAuthenticated, navigate]);
 
   const signInWithGoogle = async () => {
@@ -53,6 +53,15 @@ export default function Auth() {
             style={{ background: "var(--gradient-gold)" }}
           >
             {isLoading ? t("connecting") : t("sign_in_google")}
+          </Button>
+
+          <Button
+            type="button"
+            onClick={continueAsGuest}
+            variant="outline"
+            className="w-full border-primary/40 hover:border-primary font-display"
+          >
+            {t("continue_as_guest")}
           </Button>
         </div>
 
