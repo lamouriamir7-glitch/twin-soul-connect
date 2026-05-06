@@ -1,192 +1,313 @@
-import { useEffect, useState } from "react";
+// ============================================================
+// src/pages/Fingerprint.tsx
+// ============================================================
+// ميكانيكا الملف (Developer Notes):
+// ------------------------------------------------------------
+// هذه الصفحة هي المسؤولة عن "تشفير البصمة النفسية".
+// سير العمل:
+//
+// 1. ينسخ المستخدم الـ Prompt (AI_PROMPT).
+// 2. يلصقه في ChatGPT/Claude/Gemini.
+// 3. يكتب نصاً حراً يعبر عن أفكاره.
+// 4. يستلم Base64 String من الـ AI.
+// 5. يلصق الـ Base64 في هذا التطبيق.
+// 6. التطبيق يفك التشفير إلى Vector مكون من 30 قيمة.
+// 7. يخزن الـ Vector في جدول profiles.
+// 8. يعود للمستخدم إلى الصفحة الرئيسية.
+//
+// الحماية:
+// - المستخدم غير المسجل لا يمكنه الوصول (توجيه إلى /auth).
+// - الـ Vector يمر عبر processUserVector() للتحقق من صحته.
+// ============================================================
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { WisdomBox } from "@/components/WisdomBox";
-import { AI_PROMPT, processUserVector } from "@/lib/twin-engine";
-import { toast } from "sonner";
-import { Copy, Fingerprint as FingerprintIcon, ArrowLeft, Sparkles, ClipboardPaste, MessageSquare, UserCircle2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useCurrentUser } from "@/lib/use-current-user";
-import { useT } from "@/i18n/LanguageContext";
-import { LanguageSelector } from "@/components/LanguageSelector";
+import { AI_PROMPT, processUserVector } from "@/lib/wind-engine";
+import { toast } from "sonner";
+
+// أيقونات (افتراضية بسيطة - استبدلها بمكوناتك الفعلية)
+const CopyIcon = () => <span>📋</span>;
+const SparklesIcon = () => <span>✨</span>;
+const FingerprintIcon = () => <span>🔍</span>;
+const ArrowLeftIcon = () => <span>⬅️</span>;
 
 export default function Fingerprint() {
   const navigate = useNavigate();
-  const { id: meUserId, isAuthenticated, isLoading: authLoading, auth0User } = useCurrentUser();
-  const { t } = useT();
+  const { id: userId, isAuthenticated, isLoading: authLoading } = useCurrentUser();
+
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [hasExisting, setHasExisting] = useState(false);
   const [nickname, setNickname] = useState("");
   const [needsNickname, setNeedsNickname] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  // --------------------------------------------------
+  // حماية: تحقق من أن المستخدم مسجل الدخول
+  // --------------------------------------------------
   useEffect(() => {
-    (async () => {
-      if (authLoading) return;
-      if (!isAuthenticated || !meUserId) return navigate("/auth", { replace: true });
+    if (authLoading) return;
+
+    if (!isAuthenticated || !userId) {
+      // غير مسجل → ارجعه لصفحة الدخول
+      navigate("/auth", { replace: true });
+      return;
+    }
+
+    // تحقق إذا كان يحتاج إلى اسم مستعار
+    checkIfNeedsNickname();
+  }, [authLoading, isAuthenticated, userId]);
+
+  // --------------------------------------------------
+  // فحص: هل المستخدم لديه nickname؟
+  // --------------------------------------------------
+  const checkIfNeedsNickname = async () => {
+    try {
       const { data } = await supabase
         .from("profiles")
-        .select("id, nickname")
-        .eq("id", meUserId)
-        .maybeSingle();
-      setHasExisting(!!data);
-      if (data?.nickname) {
-        setNickname(data.nickname);
-        setNeedsNickname(false);
-      } else {
-        const pending = localStorage.getItem("pending_nickname");
-        if (pending) setNickname(pending);
+        .select("nickname")
+        .eq("id", userId)
+        .single();
+
+      if (!data?.nickname || data.nickname === "Unknown") {
         setNeedsNickname(true);
       }
-    })();
-  }, [navigate, authLoading, isAuthenticated, meUserId, auth0User]);
-
-  const copyPrompt = async () => {
-    await navigator.clipboard.writeText(AI_PROMPT);
-    toast.success(t("copied_paste_at_ai"));
+    } catch {
+      // إذا لم يوجد profile بعد، يحتاج nickname
+      setNeedsNickname(true);
+    }
   };
 
+  // --------------------------------------------------
+  // نسخ الـ Prompt إلى الحافظة
+  // --------------------------------------------------
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(AI_PROMPT);
+      toast.success("✅ تم نسخ النص. ألصقه في ChatGPT أو Claude");
+    } catch {
+      toast.error("❌ فشل النسخ. انسخ النص يدوياً من الأسفل");
+    }
+  };
+
+  // --------------------------------------------------
+  // إرسال البصمة: فك التشفير + تخزين في Supabase
+  // --------------------------------------------------
   const submit = async () => {
+    // (1) تحقق من الـ Nickname
     const trimmedNick = nickname.trim();
     if (needsNickname && !trimmedNick) {
-      toast.error(t("pick_nickname"));
+      toast.error("⚠️ الرجاء اختيار اسم مستعار أولاً");
       return;
     }
-    const vector = processUserVector(code);
-    if (!vector) {
-      toast.error(t("invalid_code"));
+
+    // (2) تحقق من الكود المدخل
+    if (!code.trim()) {
+      toast.error("⚠️ الرجاء لصق كود Base64 من الذكاء الاصطناعي");
       return;
     }
+
+    // (3) فك تشفير الـ Vector
+    const vector = processUserVector(code.trim());
+    if (!vector || vector.length !== 30) {
+      toast.error("❌ الكود غير صالح. تأكد من لصق كود Base64 كاملاً");
+      return;
+    }
+
+    // (4) تأكد أن الـ Vector ليس كله أصفار
+    const hasValues = vector.some((v) => v !== 0);
+    if (!hasValues) {
+      toast.error("❌ البصمة فارغة. أعد المحاولة مع نص أطول");
+      return;
+    }
+
+    // (5) تخزين في قاعدة البيانات
     setLoading(true);
     try {
-      if (!meUserId) throw new Error(t("session_expired"));
-      const finalNickname = trimmedNick || nickname || t("unknown");
+      const finalNickname = trimmedNick || "User_" + userId.substring(0, 6);
 
       const { error } = await supabase
         .from("profiles")
-        .upsert({ id: meUserId, nickname: finalNickname, vector }, { onConflict: "id" });
+        .upsert({
+          id: userId,
+          nickname: finalNickname,
+          vector: vector,
+          updated_at: new Date().toISOString(),
+        });
+
       if (error) throw error;
-      localStorage.removeItem("pending_nickname");
-      toast.success(t("fingerprint_registered"));
+
+      toast.success("✅ تم تسجيل بصمتك النفسية بنجاح!");
+      // العودة للرئيسية مع إشارة أن التحليل تم
       navigate("/", { replace: true, state: { justAnalyzed: true } });
     } catch (e: any) {
-      toast.error(e.message ?? "خطأ");
+      console.error("Submit error:", e);
+      toast.error("❌ فشل في حفظ البصمة: " + (e.message || "خطأ غير معروف"));
     } finally {
       setLoading(false);
     }
   };
 
+  // --------------------------------------------------
+  // شاشة تحميل
+  // --------------------------------------------------
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-white animate-pulse">جاري التحميل...</p>
+      </div>
+    );
+  }
+
+  // --------------------------------------------------
+  // الواجهة
+  // --------------------------------------------------
   return (
-    <main className="starfield min-h-screen px-4 py-10 relative">
-      <div className="relative z-10 max-w-3xl mx-auto">
+    <main className="min-h-screen bg-black px-4 py-8">
+      <div className="max-w-3xl mx-auto">
+
+        {/* ----- شريط علوي: رجوع + لغة ----- */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition"
           >
-            <ArrowLeft className="w-4 h-4" /> {t("back")}
+            <ArrowLeftIcon />
+            <span>رجوع</span>
           </button>
-          <LanguageSelector />
         </div>
 
+        {/* ----- العنوان ----- */}
         <div className="text-center mb-8">
-          <FingerprintIcon className="w-14 h-14 mx-auto text-primary animate-float-slow mb-3" />
-          <h1 className="font-display text-3xl md:text-5xl text-gradient-primary mb-2">
-            {hasExisting ? t("renew_fingerprint_title") : t("your_fingerprint")}
+          <div className="text-5xl mb-4">
+            <FingerprintIcon />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            تحليل البصمة النفسية
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            {hasExisting ? t("renew_desc") : t("three_steps")}
+          <p className="text-gray-400 max-w-md mx-auto">
+            حول شخصيتك إلى مصفوفة رقمية مكونة من 30 بعداً لتجد توأم روحك
           </p>
         </div>
 
-        {!hasExisting && (
-          <section className="rounded-2xl border border-border bg-card/40 backdrop-blur-xl p-6 shadow-cosmic mb-6">
-            <h2 className="font-display text-lg text-gradient-primary mb-4 text-center">
-              {t("how_to_get_code")}
-            </h2>
-            <ol className="space-y-4">
-              <Step n="1" icon={<Copy className="w-4 h-4" />} title={t("step1_title")} desc={t("step1_desc")} />
-              <Step n="2" icon={<MessageSquare className="w-4 h-4" />} title={t("step2_title")} desc={t("step2_desc")} />
-              <Step n="3" icon={<ClipboardPaste className="w-4 h-4" />} title={t("step3_title")} desc={t("step3_desc")} />
-            </ol>
-          </section>
-        )}
+        {/* ----- الخطوات ----- */}
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <SparklesIcon />
+            كيفية الحصول على الكود
+          </h2>
+          <ol className="space-y-4 text-gray-300">
+            <li className="flex gap-3">
+              <span className="text-purple-400 font-bold text-lg">1.</span>
+              <div>
+                <p className="font-semibold text-white">انسخ النص التحليلي</p>
+                <p className="text-sm text-gray-400">
+                  اضغط الزر أدناه لنسخ الـ Prompt الخاص بالمحلل النفسي
+                </p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-purple-400 font-bold text-lg">2.</span>
+              <div>
+                <p className="font-semibold text-white">أرسله للذكاء الاصطناعي</p>
+                <p className="text-sm text-gray-400">
+                  افتح ChatGPT أو Claude وألصق النص، ثم اكتب أفكارك بحرية
+                </p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-purple-400 font-bold text-lg">3.</span>
+              <div>
+                <p className="font-semibold text-white">انسخ كود Base64</p>
+                <p className="text-sm text-gray-400">
+                  سيعطيك الذكاء الاصطناعي كوداً طويلاً، انسخه كاملاً
+                </p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="text-purple-400 font-bold text-lg">4.</span>
+              <div>
+                <p className="font-semibold text-white">ألصقه هنا</p>
+                <p className="text-sm text-gray-400">
+                  عد إلى هذه الصفحة وألصق الكود في المربع أدناه
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
 
-        {needsNickname && (
-          <section className="rounded-2xl border border-gold/40 bg-card/60 backdrop-blur-xl p-6 shadow-gold-glow space-y-3 mb-6">
-            <h2 className="font-display text-xl flex items-center gap-2">
-              <UserCircle2 className="w-5 h-5 text-gold" /> {t("your_name_here")}
+        {/* ----- نسخ الـ Prompt ----- */}
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-white">
+              نص المحلل النفسي
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">{t("nickname_desc")}</p>
-            <Label className="font-display sr-only">{t("your_name_here")}</Label>
-            <Input
-              value={nickname}
-              maxLength={40}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder={t("nickname_placeholder")}
-              className="bg-input/60 border-border"
-            />
-          </section>
-        )}
-
-        <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-xl text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" /> {t("prompt_text")}
-            </h2>
-            <Button onClick={copyPrompt} variant="outline" size="sm" className="gap-2 border-primary/40">
-              <Copy className="w-4 h-4" /> {t("copy_text")}
+            <Button
+              onClick={copyPrompt}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <CopyIcon />
+              نسخ
             </Button>
           </div>
-          <div className="rounded-lg bg-muted/40 border border-border p-4 max-h-44 overflow-y-auto font-mono text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap" dir="rtl">
-            {AI_PROMPT}
+          <div className="bg-gray-950 rounded-lg p-4 max-h-32 overflow-y-auto">
+            <p className="text-gray-400 text-xs whitespace-pre-wrap">
+              {AI_PROMPT.substring(0, 300)}...
+            </p>
           </div>
-        </section>
+        </div>
 
-        <section className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-cosmic space-y-4 mt-6">
-          <h2 className="font-display text-xl flex items-center gap-2">
-            <ClipboardPaste className="w-4 h-4 text-primary" /> {t("paste_code_here")}
+        {/* ----- الاسم المستعار (إذا لزم) ----- */}
+        {needsNickname && (
+          <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 mb-6">
+            <h2 className="text-lg font-bold text-white mb-3">
+              اختر اسماً مستعاراً
+            </h2>
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="مثلاً: المتأمل الحزين"
+              maxLength={30}
+              className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+            />
+          </div>
+        )}
+
+        {/* ----- لصق الكود ----- */}
+        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 mb-6">
+          <h2 className="text-lg font-bold text-white mb-3">
+            ألصق كود Base64 هنا
           </h2>
           <Textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder={t("paste_placeholder")}
-            rows={5}
-            className="font-mono text-xs bg-input/60 border-border"
+            placeholder="ألصق الكود الذي حصلت عليه من الذكاء الاصطناعي..."
+            className="min-h-[120px] bg-gray-950 border-gray-700 text-white placeholder-gray-500"
           />
-          <Button
-            onClick={submit}
-            disabled={loading || !code.trim()}
-            className="w-full bg-gradient-to-l from-primary to-accent text-primary-foreground font-display tracking-wider shadow-violet-glow"
-          >
-            {loading ? t("analyzing") : hasExisting ? t("renew_fingerprint_title") : t("save_fingerprint")}
-          </Button>
-        </section>
+        </div>
 
-        <WisdomBox />
+        {/* ----- زر الإرسال ----- */}
+        <Button
+          onClick={submit}
+          disabled={loading}
+          className="w-full py-6 text-lg font-bold"
+        >
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              جاري تحليل البصمة...
+            </span>
+          ) : (
+            "تسجيل البصمة النفسية"
+          )}
+        </Button>
+
       </div>
     </main>
-  );
-}
-
-function Step({ n, icon, title, desc }: { n: string; icon: React.ReactNode; title: string; desc: string }) {
-  return (
-    <li className="flex gap-4 items-start">
-      <div className="relative shrink-0">
-        <div className="w-10 h-10 rounded-full border border-primary/40 bg-primary/5 flex items-center justify-center font-display text-primary text-lg">
-          {n}
-        </div>
-      </div>
-      <div className="flex-1 min-w-0 pt-0.5">
-        <div className="flex items-center gap-2 font-display text-base text-foreground mb-0.5">
-          <span className="text-primary/80">{icon}</span>
-          {title}
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-      </div>
-    </li>
   );
 }
