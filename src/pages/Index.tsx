@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { supabase } from "@/integrations/supabase/client";
 import MessagesScreen from "@/components/MessagesScreen";
@@ -23,7 +22,6 @@ const buildFallback = (id: string): Profile => ({
 });
 
 const Index = () => {
-  const navigate = useNavigate();
   const { id, isAuthenticated, isLoading: authLoading, logout } = useCurrentUser();
   const { t } = useT();
   const [me, setMe] = useState<Profile | null>(null);
@@ -37,7 +35,7 @@ const Index = () => {
     if (authLoading) return;
 
     if (!isAuthenticated || !id) {
-      navigate("/auth", { replace: true });
+      setMe(buildFallback("guest_" + Math.random().toString(36).substr(2, 9)));
       return;
     }
 
@@ -45,35 +43,32 @@ const Index = () => {
     initialized.current = true;
 
     const init = async () => {
+      setMe(buildFallback(id));
       try {
         const { data } = await supabase
           .from("profiles")
+          .upsert(
+            { id, nickname: "User", vector: Array(30).fill(0), priorities: {} },
+            { onConflict: "id", ignoreDuplicates: false }
+          )
           .select("*")
-          .eq("id", id)
           .maybeSingle();
 
-        if (!data) {
-          navigate("/fingerprint", { replace: true });
-          return;
+        if (data) {
+          setMe(data as Profile);
+          setPriorities((data.priorities as Record<string, number>) ?? {});
         }
-
-        setMe(data as Profile);
-        setPriorities((data.priorities as Record<string, number>) ?? {});
-
-        // إن جاء من صفحة البصمة لتوّه بعد التحليل، أظهر شاشة النجاح
-        const state = (window.history.state && window.history.state.usr) || {};
-        if (state.justAnalyzed) setView("success");
       } catch (e) {
         console.error("Init error:", e);
       }
     };
 
     init();
-  }, [authLoading, isAuthenticated, id, navigate]);
+  }, [authLoading, isAuthenticated, id]);
 
   const savePriorities = async (p: Record<string, number>) => {
     setPriorities(p);
-    if (me) {
+    if (me && !me.id.startsWith("guest_")) {
       await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
     }
   };
@@ -104,7 +99,7 @@ const Index = () => {
           <MessagesScreen
             meId={me.id}
             onOpenMatches={() => setView("matches")}
-            onRenewFingerprint={() => navigate("/fingerprint")}
+            onRenewFingerprint={() => setView("success")}
             onLogout={onLogout}
           />
         ) : (
