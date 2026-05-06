@@ -73,7 +73,7 @@ const Index = () => {
 
   const savePriorities = async (p: Record<string, number>) => {
     setPriorities(p);
-    if (me && !me.id.startsWith("guest_")) {
+    if (me) {
       await supabase.from("profiles").update({ priorities: p }).eq("id", me.id);
     }
   };
