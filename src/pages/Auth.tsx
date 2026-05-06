@@ -6,11 +6,17 @@ import { WisdomBox } from "@/components/WisdomBox";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AppTitle } from "@/components/AppTitle";
 import { useT } from "@/i18n/LanguageContext";
-import { useCurrentUser } from "@/lib/use-current-user";
+import { useCurrentUser, ensureGuestId, setGuestActive, isGuestActive } from "@/lib/use-current-user";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useCurrentUser();
+
+  const continueAsGuest = () => {
+    ensureGuestId();
+    setGuestActive(true);
+    navigate("/", { replace: true });
+  };
   const { t } = useT();
 
   useEffect(() => {
